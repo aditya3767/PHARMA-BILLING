@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediBill - Profit</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --primary-dark: #0d47a1;
+            --primary-light: #e8f0fe;
+            --secondary: #6c5ce7;
+            --accent: #ffc107;
+            --success: #0f9d58;
+            --danger: #ea4335;
+            --warning: #f39c12;
+            --info: #17a2b8;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --white: #ffffff;
+            --sidebar-width: 280px;
+            --header-height: 80px;
+            --border-radius: 12px;
+            --box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            color: #333;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--white);
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--box-shadow);
+            z-index: 1000;
+            transition: var(--transition);
+        }
+
+        .logo {
+            text-align: center;
+            padding: 25px 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .logo span {
+            color: var(--accent);
+            font-weight: 800;
+        }
+
+        .logo p {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .menu-item {
+            padding: 16px 25px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: var(--transition);
+            border-left: 4px solid transparent;
+            margin: 4px 12px;
+            border-radius: 8px;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            background: rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--accent);
+        }
+
+        .menu-item i {
+            margin-right: 15px;
+            font-size: 20px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .menu-item span {
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+            background: var(--white);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+            height: var(--header-height);
+            z-index: 100;
+        }
+
+        .search-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin: 0 auto;
+            flex: 1;
+            max-width: 600px;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background: var(--light);
+            border-radius: 50px;
+            padding: 12px 20px;
+            width: 100%;
+            position: relative;
+            transition: var(--transition);
+            border: 2px solid transparent;
+        }
+
+        .search-bar:focus-within {
+            border-color: var(--primary);
+            background: var(--white);
+            box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
+        }
+
+        .search-bar input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+            padding: 5px 5px 5px 15px;
+            font-size: 16px;
+            color: var(--dark);
+        }
+
+        .clear-search {
+            position: absolute;
+            right: 15px;
+            cursor: pointer;
+            color: var(--gray);
+            display: none;
+            background: var(--light-gray);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .clear-search:hover {
+            background: var(--gray);
+            color: var(--white);
+        }
+
+        .search-icon {
+            color: var(--gray);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            margin-left: 20px;
+        }
+
+        .user-info .avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: 20px;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+
+        .user-info h4 {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .user-info p {
+            color: var(--gray);
+            font-size: 13px;
+        }
+
+        /* Content Area Styles */
+        .content {
+            padding: 30px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 24px;
+            margin-bottom: 30px;
+            transition: var(--transition);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .card:hover {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title i {
+            font-size: 22px;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        th {
+            background-color: var(--primary-light);
+            font-weight: 700;
+            color: var(--primary);
+            position: sticky;
+            top: 0;
+        }
+
+        tr {
+            transition: var(--transition);
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.03);
+        }
+
+        /* Custom Scrollbar Styles */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* Full Screen Profit Modal */
+        .profit-modal {
+            display: none;
+            position: fixed;
+            z-index: 1105;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .profit-modal-content {
+            background: linear-gradient(135deg, var(--white) 0%, #f8f9ff 100%);
+            margin: 0 auto;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            box-shadow: none;
+            animation: slideInFull 0.4s ease;
+            position: relative;
+        }
+
+        .modal-header {
+            background: var(--primary);
+            color: var(--white);
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .modal-header h2 {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .close-full {
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--white);
+            transition: var(--transition);
+        }
+
+        .close-full:hover {
+            color: var(--accent);
+        }
+
+        .modal-body {
+            padding: 30px;
+            flex: 1;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            background: var(--white);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            transition: var(--transition);
+        }
+
+        .stat-box:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--gray);
+            margin-top: 5px;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-wrapper {
+            background: var(--white);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            z-index: 1;
+        }
+
+        .chart-wrapper h3 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .details-table {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .details-table table {
+            width: 100%;
+        }
+
+        .details-table th {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .details-table td {
+            padding: 12px;
+        }
+
+        /* Stats Modal */
+        .stats-modal {
+            display: none;
+            position: fixed;
+            z-index: 1105;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+        }
+
+        .stats-modal-content {
+            background-color: var(--white);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--box-shadow);
+            animation: slideIn 0.3s ease;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: var(--light);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--box-shadow);
+        }
+
+        /* Animations */
+        @keyframes slideInFull {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: fixed;
+                bottom: 0;
+                z-index: 1000;
+                padding: 10px 0;
+            }
+            .logo {
+                display: none;
+            }
+            .menu-items {
+                display: flex;
+                overflow-x: auto;
+            }
+            .menu-item {
+                flex-direction: column;
+                padding: 12px;
+                margin: 4px;
+                min-width: 80px;
+            }
+            .menu-item i {
+                margin-right: 0;
+                margin-bottom: 5px;
+                font-size: 20px;
+            }
+            .menu-item span {
+                font-size: 12px;
+            }
+            .main-content {
+                margin-bottom: 80px;
+            }
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                height: auto;
+                padding: 15px;
+                gap: 15px;
+            }
+            .search-container {
+                width: 100%;
+            }
+            .user-info {
+                margin-left: 0;
+            }
+            .modal-body {
+                padding: 15px;
+            }
+            .summary-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Filters Section */
+        .filters-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-label {
+            font-size: 14px;
+            color: var(--gray);
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .filter-select {
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 2px solid var(--light-gray);
+            background: var(--white);
+            color: var(--dark);
+            font-size: 16px;
+            transition: var(--transition);
+            min-width: 180px;
+        }
+
+        .filter-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
+        }
+    </style>
+</head>
+<body onload="initializeApp()">
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1>Medi<span>Bill</span></h1>
+                <p>Pharmacy Management System</p>
+            </div>
+            <div class="menu-items">
+                <div class="menu-item" onclick="selectMenu('dashboard')">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="menu-item" onclick="selectMenu('inventory')">
+                    <i class="fas fa-pills"></i>
+                    <span>Inventory</span>
+                </div>
+                <div class="menu-item active" onclick="selectMenu('profit')">
+                    <i class="fas fa-receipt"></i>
+                    <span>Profit</span>
+                </div>
+                <div class="menu-item" onclick="selectMenu('reports')">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Reports</span>
+                </div>
+                <div class="menu-item" onclick="selectMenu('logout')">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <div class="search-container">
+                    <div class="search-bar">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="reportSearch" placeholder="Search profits..." onkeyup="filterBills()">
+                        <span class="clear-search" id="clearSearch" onclick="clearSearch()">
+                            <i class="fas fa-times"></i>
+                        </span>
+                    </div>
+                </div>
+                <div class="user-info">
+                    <div class="avatar">VB</div>
+                    <div>
+                        <h4>Vilas Bhoir</h4>
+                        <p>Pharmacist</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content">
+                <!-- Filters Section -->
+                <div class="filters-section">
+                    <div class="filter-group">
+                        <label class="filter-label">Sort By</label>
+                        <select class="filter-select" id="sortBy" onchange="filterBills()">
+                            <option value="date-desc">Date (Newest First)</option>
+                            <option value="date-asc">Date (Oldest First)</option>
+                            <option value="total_amount-desc">Amount (High to Low)</option>
+                            <option value="total_amount-asc">Amount (Low to High)</option>
+                            <option value="invoice_no-desc">Invoice (High to Low)</option>
+                            <option value="invoice_no-asc">Invoice (Low to High)</option>
+                            <option value="customer_name-desc">Customer (Z-A)</option>
+                            <option value="customer_name-asc">Customer (A-Z)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Amount Range</label>
+                        <select class="filter-select" id="amountRange" onchange="filterBills()">
+                            <option value="all">All Amounts</option>
+                            <option value="0-500">₹0 - ₹500</option>
+                            <option value="500-1000">₹500 - ₹1000</option>
+                            <option value="1000-5000">₹1000 - ₹5000</option>
+                            <option value="5000+">Above ₹5000</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- Bills List -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-file-alt"></i> Bills List</h2>
+                    </div>
+                    <table id="billsTable">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('invoice_no')">Invoice No <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable('date')">Date <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable('customer_name')">Customer Name <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable('total_amount')">Total Amount <i class="fas fa-sort"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody id="billsTableBody">
+                            <!-- Bills will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Screen Profit Modal -->
+    <div id="profitModal" class="profit-modal">
+        <div class="profit-modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-chart-line"></i> Profit Analysis - Invoice #<span id="invoiceTitle">000</span></h2>
+                <span class="close-full" onclick="closeProfitModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="summary-stats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="totalProfit">₹0</div>
+                        <div class="stat-label">Total Profit</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="totalDiscount">₹0</div>
+                        <div class="stat-label">Total Discount</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="totalItems">0</div>
+                        <div class="stat-label">Total Items</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="profitMargin">0%</div>
+                        <div class="stat-label">Profit Margin</div>
+                    </div>
+                </div>
+
+                <div class="charts-container">
+                    <div class="chart-wrapper">
+                        <h3>Profit Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="profitChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <h3>Revenue vs Cost</h3>
+                        <div class="chart-container">
+                            <canvas id="revenueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-container">
+                    <div class="chart-wrapper">
+                        <h3>Profit Trend Analysis</h3>
+                        <div class="chart-container">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <h3>Profitability Heat Map</h3>
+                        <div class="chart-container">
+                            <canvas id="heatmapChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="details-table">
+                    <h3 style="padding: 20px; background: var(--primary-light); margin: 0; color: var(--primary);">Detailed Breakdown</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Product Name</th>
+                                <th>Qty</th>
+                                <th>Pack</th>
+                                <th>MRP</th>
+                                <th>Rate</th>
+                                <th>Amount</th>
+                                <th>Discount</th>
+                                <th>Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="profitTableBody">
+                            <!-- Profit details will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Modal -->
+    <div id="statsModal" class="stats-modal">
+        <div class="stats-modal-content">
+            <span class="close" onclick="closeStatsModal()">&times;</span>
+            <h2><i class="fas fa-chart-bar"></i> Medicine Inventory Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalMedicines">0</div>
+                    <div class="stat-label">Total Medicines</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalVariants">0</div>
+                    <div class="stat-label">Total Variants</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalStock">0</div>
+                    <div class="stat-label">Total Stock</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="expiringSoon">0</div>
+                    <div class="stat-label">Expiring Soon</div>
+                </div>
+            </div>
+            <div style="margin-top: 30px;">
+                <h3>Medicine Categories</h3>
+                <div id="categoryStats">
+                    <!-- Category stats will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let bills = [];
+        let medicines = [];
+        let profitChart = null;
+        let revenueChart = null;
+        let trendChart = null;
+        let heatmapChart = null;
+        let currentSort = 'date-desc';
+
+        // Initialize the profit page
+        async function initializeApp() {
+            await fetchBills();
+            await fetchMedicines();
+            filterBills();
+        }
+
+        // Fetch bills from the backend
+        async function fetchBills() {
+            try {
+                const response = await fetch('/api/bills');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch bills');
+                }
+                bills = await response.json();
+                bills.sort((a, b) => {
+                    const dateDiff = new Date(b.date) - new Date(a.date);
+                    if (dateDiff === 0) {
+                        return b.invoice_no - a.invoice_no;
+                    }
+                    return dateDiff;
+                });
+            } catch (error) {
+                console.error('Error fetching bills:', error);
+                alert('Failed to load bills. Please try again.');
+            }
+        }
+
+        // Fetch medicines from the backend
+        async function fetchMedicines() {
+            try {
+                const response = await fetch('/api/medicines');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch medicines');
+                }
+                medicines = await response.json();
+            } catch (error) {
+                console.error('Error fetching medicines:', error);
+                alert('Failed to load medicines. Please try again.');
+            }
+        }
+
+        // Filter and populate bills table
+        function filterBills() {
+            const searchTerm = document.getElementById('reportSearch').value.toLowerCase();
+            currentSort = document.getElementById('sortBy').value;
+            const amountRange = document.getElementById('amountRange').value;
+
+            const tableBody = document.getElementById('billsTableBody');
+            tableBody.innerHTML = '';
+
+            let filteredBills = bills.filter(bill => {
+                const matchesSearch = bill.invoice_no.toString().includes(searchTerm) ||
+                                      bill.customer_name.toLowerCase().includes(searchTerm);
+
+                // Amount range filter
+                let matchesAmountRange = true;
+                if (amountRange === '0-500') {
+                    matchesAmountRange = bill.total_amount >= 0 && bill.total_amount <= 500;
+                } else if (amountRange === '500-1000') {
+                    matchesAmountRange = bill.total_amount > 500 && bill.total_amount <= 1000;
+                } else if (amountRange === '1000-5000') {
+                    matchesAmountRange = bill.total_amount > 1000 && bill.total_amount <= 5000;
+                } else if (amountRange === '5000+') {
+                    matchesAmountRange = bill.total_amount > 5000;
+                }
+
+                return matchesSearch && matchesAmountRange;
+            });
+
+            // Apply sorting
+            filteredBills = sortBills(filteredBills, currentSort);
+
+            filteredBills.forEach(bill => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><a href="#" onclick="showProfitModal(${bill.invoice_no}); return false;">${bill.invoice_no}</a></td>
+                    <td>${bill.date}</td>
+                    <td>${bill.customer_name}</td>
+                    <td>₹${bill.total_amount.toFixed(2)}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Sort bills based on selected criteria
+        function sortBills(bills, sortBy) {
+            let sortedBills = [...bills]; // Create a copy to avoid modifying the original
+            switch(sortBy) {
+                case 'date-desc':
+                    return sortedBills.sort((a, b) => {
+                        const dateDiff = new Date(b.date) - new Date(a.date);
+                        if (dateDiff === 0) {
+                            return b.invoice_no - a.invoice_no;
+                        }
+                        return dateDiff;
+                    });
+                case 'date-asc':
+                    return sortedBills.sort((a, b) => {
+                        const dateDiff = new Date(a.date) - new Date(b.date);
+                        if (dateDiff === 0) {
+                            return a.invoice_no - b.invoice_no;
+                        }
+                        return dateDiff;
+                    });
+                case 'total_amount-desc':
+                    return sortedBills.sort((a, b) => b.total_amount - a.total_amount);
+                case 'total_amount-asc':
+                    return sortedBills.sort((a, b) => a.total_amount - b.total_amount);
+                case 'invoice_no-desc':
+                    return sortedBills.sort((a, b) => b.invoice_no - a.invoice_no);
+                case 'invoice_no-asc':
+                    return sortedBills.sort((a, b) => a.invoice_no - b.invoice_no);
+                case 'customer_name-desc':
+                    return sortedBills.sort((a, b) => b.customer_name.localeCompare(a.customer_name));
+                case 'customer_name-asc':
+                    return sortedBills.sort((a, b) => a.customer_name.localeCompare(b.customer_name));
+                default:
+                    return sortedBills;
+            }
+        }
+
+        // Sort table by column
+        function sortTable(column) {
+            let sortDirection = 'asc';
+
+            // Check if we're already sorting by this column
+            if (currentSort.startsWith(column)) {
+                // Toggle direction
+                sortDirection = currentSort.endsWith('desc') ? 'asc' : 'desc';
+            } else {
+                // Default to descending for date, ascending for others
+                sortDirection = column === 'date' ? 'desc' : 'asc';
+            }
+
+            currentSort = `${column}-${sortDirection}`;
+            document.getElementById('sortBy').value = currentSort;
+            filterBills();
+        }
+
+        // Clear search and filters
+        function clearSearch() {
+            document.getElementById('reportSearch').value = '';
+            document.getElementById('sortBy').value = 'date-desc';
+            document.getElementById('amountRange').value = 'all';
+            currentSort = 'date-desc';
+            filterBills();
+        }
+
+        // Show full screen profit modal
+        async function showProfitModal(invoice_no) {
+            try {
+                const response = await fetch(`/api/bill/${invoice_no}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch bill details');
+                }
+                const bill = await response.json();
+
+                // Set invoice title
+                document.getElementById('invoiceTitle').textContent = invoice_no;
+
+                // Calculate totals
+                let totalProfit = 0;
+                let totalDiscount = 0;
+                let totalItems = 0;
+                let totalRevenue = 0;
+                let totalCost = 0;
+
+                const profitData = [];
+                const revenueData = [];
+                const productNames = [];
+
+                bill.items.forEach(item => {
+                    const full_amount = item.quantity * item.mrp;
+                    const selling_amount = item.amount || (item.quantity * item.rate);
+                    const discount = full_amount - selling_amount;
+                    const cost = item.mrp * 0.3; // Applied formula: cost = MRP * (1 - 0.7) = MRP * 0.3
+                    const profit = selling_amount - (cost * item.quantity);
+
+                    totalProfit += profit;
+                    totalDiscount += discount;
+                    totalItems += item.quantity;
+                    totalRevenue += selling_amount;
+                    totalCost += (cost * item.quantity);
+
+                    profitData.push(profit);
+                    revenueData.push({
+                        revenue: selling_amount,
+                        cost: cost * item.quantity
+                    });
+                    productNames.push(item.name);
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.name}</td>
+                        <td>${item.quantity}</td>
+                        <td>${item.size}</td>
+                        <td>₹${item.mrp.toFixed(2)}</td>
+                        <td>₹${item.rate.toFixed(2)}</td>
+                        <td>₹${selling_amount.toFixed(2)}</td>
+                        <td>₹${discount.toFixed(2)}</td>
+                        <td style="color: ${profit >= 0 ? 'var(--success)' : 'var(--danger)'}">₹${profit.toFixed(2)}</td>
+                    `;
+                    document.getElementById('profitTableBody').appendChild(row);
+                });
+
+                // Update summary stats
+                document.getElementById('totalProfit').textContent = `₹${totalProfit.toFixed(2)}`;
+                document.getElementById('totalDiscount').textContent = `₹${totalDiscount.toFixed(2)}`;
+                document.getElementById('totalItems').textContent = totalItems;
+                const profitMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : 0;
+                document.getElementById('profitMargin').textContent = `${profitMargin}%`;
+
+                // Create charts
+                createProfitChart(profitData, productNames);
+                createRevenueChart(revenueData, productNames);
+                createTrendChart(profitData, productNames);
+                createHeatmapChart(profitData, productNames);
+
+                document.getElementById('profitModal').style.display = 'block';
+                document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            } catch (error) {
+                console.error('Error fetching bill details:', error);
+                alert('Failed to load bill details. Please try again.');
+            }
+        }
+
+        // Create profit distribution chart
+        function createProfitChart(profitData, labels) {
+            const ctx = document.getElementById('profitChart').getContext('2d');
+            if (profitChart) {
+                profitChart.destroy();
+            }
+
+            // Create gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(26, 115, 232, 0.8)');
+            gradient.addColorStop(1, 'rgba(108, 92, 231, 0.6)');
+
+            profitChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Profit (₹)',
+                        data: profitData,
+                        backgroundColor: profitData.map(p => p >= 0 ? gradient : 'rgba(234, 67, 53, 0.8)'),
+                        borderColor: profitData.map(p => p >= 0 ? 'rgba(26, 115, 232, 1)' : 'rgba(234, 67, 53, 1)'),
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 13 },
+                            padding: 10,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value;
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        // Create revenue vs cost chart
+        function createRevenueChart(revenueData, labels) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            if (revenueChart) {
+                revenueChart.destroy();
+            }
+            const revenueValues = revenueData.map(d => d.revenue);
+            const costValues = revenueData.map(d => d.cost);
+
+            // Create gradients
+            const revenueGradient = ctx.createLinearGradient(0, 0, 0, 300);
+            revenueGradient.addColorStop(0, 'rgba(26, 115, 232, 0.8)');
+            revenueGradient.addColorStop(1, 'rgba(26, 115, 232, 0.2)');
+
+            const costGradient = ctx.createLinearGradient(0, 0, 0, 300);
+            costGradient.addColorStop(0, 'rgba(108, 92, 231, 0.8)');
+            costGradient.addColorStop(1, 'rgba(108, 92, 231, 0.2)');
+
+            revenueChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Revenue',
+                        data: revenueValues,
+                        backgroundColor: revenueGradient,
+                        borderColor: 'rgba(26, 115, 232, 1)',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }, {
+                        label: 'Cost',
+                        data: costValues,
+                        backgroundColor: costGradient,
+                        borderColor: 'rgba(108, 92, 231, 1)',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 13 },
+                            padding: 10,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value;
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        // Create trend analysis chart
+        function createTrendChart(profitData, labels) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            if (trendChart) {
+                trendChart.destroy();
+            }
+
+            // Create gradient for the area under the line
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(15, 157, 88, 0.3)');
+            gradient.addColorStop(1, 'rgba(15, 157, 88, 0.05)');
+
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Profit Trend',
+                        data: profitData,
+                        backgroundColor: gradient,
+                        borderColor: 'rgba(15, 157, 88, 1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: 'rgba(15, 157, 88, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 13 },
+                            padding: 10,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value;
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        // Create profitability heat map
+        function createHeatmapChart(profitData, labels) {
+            const ctx = document.getElementById('heatmapChart').getContext('2d');
+            if (heatmapChart) {
+                heatmapChart.destroy();
+            }
+
+            // Create a bubble chart as a heatmap visualization
+            const bubbleData = profitData.map((profit, index) => {
+                return {
+                    x: index,
+                    y: profit,
+                    r: Math.abs(profit) / 10 + 10 // Bubble size based on profit magnitude
+                };
+            });
+
+            heatmapChart = new Chart(ctx, {
+                type: 'bubble',
+                data: {
+                    datasets: [{
+                        label: 'Profitability',
+                        data: bubbleData,
+                        backgroundColor: bubbleData.map(item => {
+                            // Color based on profit value
+                            if (item.y >= 0) {
+                                // Green gradient for positive profits
+                                const opacity = Math.min(item.y / 100, 0.8);
+                                return `rgba(15, 157, 88, ${opacity})`;
+                            } else {
+                                // Red gradient for negative profits
+                                const opacity = Math.min(Math.abs(item.y) / 100, 0.8);
+                                return `rgba(234, 67, 53, ${opacity})`;
+                            }
+                        }),
+                        borderColor: bubbleData.map(item => item.y >= 0 ? 'rgba(15, 157, 88, 1)' : 'rgba(234, 67, 53, 1)'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const data = context.raw;
+                                    return `${labels[data.x]}: ₹${data.y.toFixed(2)}`;
+                                }
+                            },
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 13 },
+                            padding: 10,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Profit (₹)'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Product Index'
+                            },
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return labels[value] || value;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        // Close profit modal
+        function closeProfitModal() {
+            document.getElementById('profitModal').style.display = 'none';
+            document.body.style.overflow = 'auto'; // Restore scrolling
+            // Clear table
+            document.getElementById('profitTableBody').innerHTML = '';
+            // Destroy charts
+            if (profitChart) {
+                profitChart.destroy();
+                profitChart = null;
+            }
+            if (revenueChart) {
+                revenueChart.destroy();
+                revenueChart = null;
+            }
+            if (trendChart) {
+                trendChart.destroy();
+                trendChart = null;
+            }
+            if (heatmapChart) {
+                heatmapChart.destroy();
+                heatmapChart = null;
+            }
+        }
+
+        // Menu selection function
+        function selectMenu(menu) {
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => item.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            if (menu === 'inventory') {
+                showStatsModal();
+            } else if (menu === 'reports') {
+                window.location.href = '/reports';
+            } else if (menu === 'profit') {
+                window.location.href = '/profit';
+            } else if (menu === 'logout') {
+                window.location.href = '/logout';
+            } else if (menu === 'dashboard') {
+                window.location.href = '/billing';
+            }
+        }
+
+        // Show stats modal
+        function showStatsModal() {
+            const totalMedicines = medicines.length;
+            const totalVariants = medicines.reduce((sum, medicine) => sum + medicine.variants.length, 0);
+            const totalStock = medicines.reduce((sum, medicine) => {
+                return sum + medicine.variants.reduce((vSum, variant) => vSum + variant.stock, 0);
+            }, 0);
+
+            const today = new Date();
+            const expiringSoon = medicines.reduce((count, medicine) => {
+                return count + medicine.variants.filter(variant => {
+                    if (!variant.expiry) return false;
+                    const expiryDate = new Date(variant.expiry);
+                    const diffTime = expiryDate - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    return diffDays <= 30 && diffDays >= 0;
+                }).length;
+            }, 0);
+
+            document.getElementById('totalMedicines').textContent = totalMedicines;
+            document.getElementById('totalVariants').textContent = totalVariants;
+            document.getElementById('totalStock').textContent = totalStock;
+            document.getElementById('expiringSoon').textContent = expiringSoon;
+
+            const categoryStats = {};
+            medicines.forEach(medicine => {
+                if (!categoryStats[medicine.category]) {
+                    categoryStats[medicine.category] = 0;
+                }
+                categoryStats[medicine.category]++;
+            });
+
+            const categoryStatsContainer = document.getElementById('categoryStats');
+            categoryStatsContainer.innerHTML = '';
+
+            for (const category in categoryStats) {
+                const statRow = document.createElement('div');
+                statRow.style.display = 'flex';
+                statRow.style.justifyContent = 'space-between';
+                statRow.style.padding = '10px 0';
+                statRow.style.borderBottom = '1px solid #eee';
+
+                statRow.innerHTML = `
+                    <div>${category}</div>
+                    <div><strong>${categoryStats[category]}</strong> medicines</div>
+                `;
+
+                categoryStatsContainer.appendChild(statRow);
+            }
+
+            document.getElementById('statsModal').style.display = 'block';
+        }
+
+        // Close stats modal
+        function closeStatsModal() {
+            document.getElementById('statsModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
