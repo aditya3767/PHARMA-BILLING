@@ -10,8 +10,4 @@ email-validator==2.2.0
 python-dotenv==1.0.1
 python-dateutil==2.9.0.post0
 pytz==2024.1
-<<<<<<< HEAD
 certifi==2024.8.30
-=======
-certifi==2024.8.30
->>>>>>> 672248a24d08a0ed3b28f525383f5d62ad87a383
