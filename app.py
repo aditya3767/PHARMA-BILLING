@@ -18,15 +18,16 @@ from pymongo.server_api import ServerApi
 import urllib.parse
 
 app = Flask(__name__)
-app.secret_key = 'e6db0ccf32af7bdb06579f263147b8d4'
+app.secret_key = os.environ.get('SECRET_KEY', 'e6db0ccf32af7bdb06579f263147b8d4')
 
 # MongoDB connection with enhanced SSL handling
 try:
-    # URL encode the password to handle special characters
-    password = "HiV2rwczhpH0Cpjq"
+    # Use environment variables for MongoDB
+    username = os.environ.get('MONGODB_USERNAME', 'adityabhoir983_db_user')
+    password = os.environ.get('MONGODB_PASSWORD', 'HiV2rwczhpH0Cpjq')
     encoded_password = urllib.parse.quote_plus(password)
 
-    connection_string = f"mongodb+srv://adityabhoir983_db_user:{encoded_password}@cluster0.aavnxbi.mongodb.net/pharmacy_db?retryWrites=true&w=majority&appName=Cluster0"
+    connection_string = f"mongodb+srv://{username}:{encoded_password}@cluster0.aavnxbi.mongodb.net/pharmacy_db?retryWrites=true&w=majority&appName=Cluster0"
 
     client = MongoClient(
         connection_string,
@@ -122,9 +123,12 @@ if hasattr(db, 'command'):  # Check if it's real MongoDB
 else:
     print("Using dummy database - skipping index creation")
 
-# Email configuration
-sender_email = "adityabhoir291@gmail.com"
-sender_password = "sheohmubyfsmoomg"
+# Email configuration - Use environment variables
+sender_email = os.environ.get('SENDER_EMAIL', 'adityabhoir291@gmail.com')
+sender_password = os.environ.get('SENDER_PASSWORD', 'sheohmubyfsmoomg')
+smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
+smtp_port = int(os.environ.get('SMTP_PORT', '587'))
+demo_mode = os.environ.get('DEMO_MODE', 'false').lower() == 'true'
 
 BASE_PDF_DIR = os.path.join(os.path.dirname(__file__), 'shree_samarth_enterprises_bills')
 
@@ -182,7 +186,7 @@ def login_required(f):
     return decorated_function
 
 
-# ADDED: Validation functions
+# Validation functions
 def validate_email(email):
     """Validate email format"""
     if not email or not isinstance(email, str):
@@ -209,7 +213,7 @@ def validate_name(name):
 
 
 def validate_age(age):
-    """Validate age (13-120)"""
+    """Validate age (15-80)"""
     try:
         if not age:
             return False
@@ -245,7 +249,7 @@ def validate_user_data(user_data):
 
     # Validate full name
     if not validate_name(user_data.get('fullName')):
-        errors.append("Full name must contain only letters and spaces")
+        errors.append("Full name must contain only letters and spaces (2-50 characters)")
 
     # Validate age
     if not validate_age(user_data.get('age')):
@@ -273,96 +277,129 @@ def validate_user_data(user_data):
 
 
 def send_otp_email(receiver_email, otp_code):
-    # Create message container
-    msg = MIMEMultipart('alternative')
-    msg['From'] = sender_email
-    msg['To'] = receiver_email
-    msg['Subject'] = "Your One-Time Password (OTP)"
-
-    html_body = f"""
-    <html>
-    <head>
-        <style>
-            body {{
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background-color: #f9f9f9;
-                margin: 0;
-                padding: 0;
-                color: #555;
-            }}
-            .container {{
-                width: 100%;
-                max-width: 600px;
-                margin: 0 auto;
-                background-color: #ffffff;
-                padding: 20px;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            }}
-            h1 {{
-                font-size: 26px;
-                color: #4CAF50;
-                text-align: center;
-                margin-bottom: 20px;
-            }}
-            .greeting {{
-                font-size: 18px;
-                color: #333;
-                margin-bottom: 15px;
-                text-align: center;
-            }}
-            .otp {{
-                background-color: #f4f4f9;
-                border-left: 4px solid #4CAF50;
-                padding: 15px;
-                font-size: 32px;
-                font-weight: bold;
-                text-align: center;
-                border-radius: 6px;
-                margin: 20px 0;
-            }}
-            p {{
-                font-size: 16px;
-                line-height: 1.6;
-                color: #555;
-                text-align: center;
-            }}
-            .footer {{
-                text-align: center;
-                margin-top: 40px;
-                font-size: 14px;
-                color: #888;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>Email Verification</h1>
-            <p class="greeting"><strong>Hello,</strong></p>
-            <p>Please verify your email address with the following code:</p>
-            <div class="otp">
-                <strong>{otp_code}</strong>
-            </div>
-            <p>Enter this code in the verification page to complete the process.</p>
-            <div class="footer">
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-
-    # Attach HTML content
-    msg.attach(MIMEText(html_body, 'html'))
-
-    # Send the email via Gmail SMTP server
+    """Enhanced OTP email sending with better error handling"""
     try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+        # Create message container
+        msg = MIMEMultipart('alternative')
+        msg['From'] = sender_email
+        msg['To'] = receiver_email
+        msg['Subject'] = "Your One-Time Password (OTP) - Pharmacy Management System"
+
+        html_body = f"""
+        <html>
+        <head>
+            <style>
+                body {{
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    background-color: #f9f9f9;
+                    margin: 0;
+                    padding: 0;
+                    color: #555;
+                }}
+                .container {{
+                    width: 100%;
+                    max-width: 600px;
+                    margin: 0 auto;
+                    background-color: #ffffff;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                }}
+                h1 {{
+                    font-size: 26px;
+                    color: #4CAF50;
+                    text-align: center;
+                    margin-bottom: 20px;
+                }}
+                .greeting {{
+                    font-size: 18px;
+                    color: #333;
+                    margin-bottom: 15px;
+                    text-align: center;
+                }}
+                .otp {{
+                    background-color: #f4f4f9;
+                    border-left: 4px solid #4CAF50;
+                    padding: 15px;
+                    font-size: 32px;
+                    font-weight: bold;
+                    text-align: center;
+                    border-radius: 6px;
+                    margin: 20px 0;
+                }}
+                p {{
+                    font-size: 16px;
+                    line-height: 1.6;
+                    color: #555;
+                    text-align: center;
+                }}
+                .footer {{
+                    text-align: center;
+                    margin-top: 40px;
+                    font-size: 14px;
+                    color: #888;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Email Verification</h1>
+                <p class="greeting"><strong>Hello,</strong></p>
+                <p>Please verify your email address with the following code:</p>
+                <div class="otp">
+                    <strong>{otp_code}</strong>
+                </div>
+                <p>Enter this code in the verification page to complete the process.</p>
+                <p><small>This OTP will expire in 10 minutes.</small></p>
+                <div class="footer">
+                    <p>Pharmacy Management System</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        # Attach HTML content
+        msg.attach(MIMEText(html_body, 'html'))
+
+        # Enhanced email sending with multiple fallbacks
+        success = False
+        error_messages = []
+
+        # Try TLS first (port 587)
+        try:
+            print(f"Attempting to send email via {smtp_server}:{smtp_port} (TLS)...")
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            server.starttls()  # Enable TLS encryption
             server.login(sender_email, sender_password)
             server.sendmail(sender_email, receiver_email, msg.as_string())
-        print(f"OTP email sent to {receiver_email}")
-        return True
+            server.quit()
+            print(f"OTP email sent successfully to {receiver_email} via TLS")
+            success = True
+        except Exception as e:
+            error_messages.append(f"TLS failed: {str(e)}")
+            print(f"TLS method failed: {e}")
+
+            # Try SSL (port 465) as fallback
+            try:
+                print("Attempting SSL fallback...")
+                with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                    server.login(sender_email, sender_password)
+                    server.sendmail(sender_email, receiver_email, msg.as_string())
+                print(f"OTP email sent successfully to {receiver_email} via SSL")
+                success = True
+            except Exception as ssl_error:
+                error_messages.append(f"SSL failed: {str(ssl_error)}")
+                print(f"SSL method also failed: {ssl_error}")
+
+        if not success:
+            print(f"All email sending methods failed for {receiver_email}")
+            print("Error details:", error_messages)
+
+        return success
+
     except Exception as e:
-        print(f"Failed to send email: {e}")
+        print(f"Unexpected error in send_otp_email: {e}")
         return False
 
 
@@ -416,7 +453,7 @@ def send_otp():
         if not receiver_email:
             return jsonify({'error': 'Missing email'}), 400
 
-        # ADDED: Email validation
+        # Email validation
         if not validate_email(receiver_email):
             return jsonify({'error': 'Invalid email format'}), 400
 
@@ -432,12 +469,20 @@ def send_otp():
         }
         otps_collection.replace_one({'email': receiver_email}, otp_doc, upsert=True)
 
-        # For demo emails, we don't actually send the email
-        if is_demo:
+        # For demo emails or testing, we don't actually send the email
+        if is_demo or demo_mode:
+            print(f"DEMO MODE: OTP for {receiver_email} would be: {otp_code}")
             return jsonify({
                 'message': 'OTP generated for demo',
-                'otp': otp_code  # Optional: return for testing
+                'otp': otp_code  # Return OTP for testing/demo
             }), 200
+
+        # Check if email credentials are configured
+        if not sender_email or not sender_password or sender_password == 'your_app_password_here':
+            return jsonify({
+                'error': 'Email service not configured',
+                'otp': otp_code  # Return OTP for development
+            }), 500
 
         # Send email
         success = send_otp_email(receiver_email, otp_code)
@@ -447,12 +492,15 @@ def send_otp():
                 'message': 'OTP sent successfully'
             }), 200
         else:
-            # Delete OTP if send failed
-            otps_collection.delete_one({'email': receiver_email})
-            return jsonify({'error': 'Failed to send OTP email'}), 500
+            # But don't delete OTP - let user try with manual entry
+            return jsonify({
+                'error': 'Failed to send OTP email. Please check your email address or try again.',
+                'otp': otp_code  # Return OTP for manual entry in case of email failure
+            }), 500
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error in send_otp route: {e}")
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 
 @app.route('/verify-otp', methods=['POST'])
@@ -466,7 +514,7 @@ def verify_otp():
         if not email or not otp_code or not user_data:
             return jsonify({'error': 'Missing email, OTP, or user data'}), 400
 
-        # ADDED: Comprehensive user data validation before OTP verification
+        # Comprehensive user data validation before OTP verification
         validation_errors = validate_user_data(user_data)
         if validation_errors:
             return jsonify({'error': ' | '.join(validation_errors)}), 400
@@ -496,7 +544,7 @@ def verify_otp():
         if existing_user:
             return jsonify({'error': 'Username or email already exists. Please use a different email.'}), 400
 
-        # ADDED: Data sanitization before storing
+        # Data sanitization before storing
         sanitized_user_data = {
             'fullName': user_data['fullName'].strip(),
             'age': int(user_data['age']),
@@ -541,7 +589,7 @@ def login():
         if not username_or_email or not password:
             return jsonify({'error': 'Missing username/email or password'}), 400
 
-        # ADDED: Basic input validation
+        # Basic input validation
         username_or_email = username_or_email.strip()
         if len(username_or_email) < 2:
             return jsonify({'error': 'Invalid username or email'}), 400
@@ -839,5 +887,46 @@ def get_notifications():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/debug-email')
+def debug_email():
+    """Debug endpoint to check email configuration"""
+    debug_info = {
+        'sender_email': sender_email,
+        'smtp_server': smtp_server,
+        'smtp_port': smtp_port,
+        'demo_mode': demo_mode,
+        'has_sender_password': bool(sender_password and sender_password != 'sheohmubyfsmoomg'),
+        'environment': os.environ.get('RENDER', 'Local development'),
+        'render': bool(os.environ.get('RENDER'))
+    }
+    return jsonify(debug_info)
+
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint for Render"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'database': 'connected' if hasattr(db, 'command') else 'dummy'
+    })
+
+
 if __name__ == '__main__':
+    # Check email configuration on startup
+    print("=== Pharmacy Management System ===")
+    print("=== Email Configuration ===")
+    print(f"Sender Email: {sender_email}")
+    print(f"SMTP Server: {smtp_server}:{smtp_port}")
+    print(f"Demo Mode: {demo_mode}")
+    print(f"Environment: {'Render' if os.environ.get('RENDER') else 'Local'}")
+
+    if demo_mode:
+        print("⚠️  RUNNING IN DEMO MODE - OTP emails will not be sent")
+    elif not sender_email or not sender_password:
+        print("⚠️  Email credentials not configured properly")
+    else:
+        print("✅ Email configuration loaded")
+
+    print("=== Server Starting ===")
     app.run(debug=True, host='0.0.0.0', port=5000)
