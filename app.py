@@ -16,6 +16,7 @@ from medicine_data import default_medicines_data
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 import urllib.parse
+import traceback
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'e6db0ccf32af7bdb06579f263147b8d4')
@@ -277,7 +278,7 @@ def validate_user_data(user_data):
 
 
 def send_otp_email(receiver_email, otp_code):
-    """Enhanced OTP email sending with better error handling for Render"""
+    """Enhanced OTP email sending with detailed error logging for Render"""
     try:
         # Create message container
         msg = MIMEMultipart('alternative')
@@ -362,9 +363,9 @@ def send_otp_email(receiver_email, otp_code):
         # Attach HTML content
         msg.attach(MIMEText(html_body, 'html'))
 
-        # Enhanced email sending with better timeout and error handling
+        # Enhanced email sending with detailed error logging for Render
         success = False
-        error_messages = []
+        detailed_errors = []
 
         # Try different methods with increased timeout for Render
         methods = [
@@ -373,40 +374,65 @@ def send_otp_email(receiver_email, otp_code):
             {'name': 'TLS (25)', 'port': 25, 'ssl': False}
         ]
 
+        print(f"🔧 Attempting to send OTP email to: {receiver_email}")
+        print(f"🔧 Using sender: {sender_email}")
+        print(f"🔧 SMTP Server: {smtp_server}")
+
         for method in methods:
             try:
-                print(f"Attempting {method['name']}...")
+                print(f"🔄 Trying {method['name']} connection...")
 
                 if method['ssl']:
                     server = smtplib.SMTP_SSL(smtp_server, method['port'], timeout=30)
+                    print(f"✅ SSL connection established on port {method['port']}")
                 else:
                     server = smtplib.SMTP(smtp_server, method['port'], timeout=30)
+                    print(f"✅ TCP connection established on port {method['port']}")
                     if not method['ssl'] and method['port'] == 587:
                         server.starttls()  # Enable TLS encryption
+                        print("✅ TLS encryption enabled")
 
+                print("🔐 Attempting login...")
                 server.login(sender_email, sender_password)
+                print("✅ Login successful")
+
+                print("📧 Sending email...")
                 server.sendmail(sender_email, receiver_email, msg.as_string())
                 server.quit()
 
-                print(f"✓ OTP email sent successfully to {receiver_email} via {method['name']}")
+                print(f"✅ OTP email sent successfully to {receiver_email} via {method['name']}")
                 success = True
                 break
 
             except Exception as e:
-                error_msg = f"{method['name']} failed: {str(e)}"
-                error_messages.append(error_msg)
-                print(f"✗ {error_msg}")
+                error_detail = f"{method['name']} failed: {str(e)}"
+                detailed_errors.append(error_detail)
+                print(f"❌ {error_detail}")
+                print(f"🔍 Error type: {type(e).__name__}")
+
+                # Print full traceback for debugging
+                traceback.print_exc()
                 continue
 
         if not success:
-            print(f"All email sending methods failed for {receiver_email}")
-            print("Error details:", error_messages)
+            print(f"❌ ALL email sending methods failed for {receiver_email}")
+            print("📋 Error summary:")
+            for i, error in enumerate(detailed_errors, 1):
+                print(f"  {i}. {error}")
 
-        return success
+            # Additional diagnostic information
+            print("🔍 Diagnostic Info:")
+            print(f"   - Sender Email: {sender_email}")
+            print(f"   - SMTP Server: {smtp_server}")
+            print(f"   - Demo Mode: {demo_mode}")
+            print(f"   - Render Environment: {os.environ.get('RENDER', 'No')}")
+
+        return success, detailed_errors
 
     except Exception as e:
-        print(f"Unexpected error in send_otp_email: {e}")
-        return False
+        print(f"💥 UNEXPECTED ERROR in send_otp_email: {e}")
+        traceback.print_exc()
+        return False, [f"Unexpected error: {str(e)}"]
 
 
 @app.route('/')
@@ -476,7 +502,7 @@ def send_otp():
 
         # If demo mode is enabled, return OTP directly
         if demo_mode:
-            print(f"DEMO MODE: OTP for {receiver_email} is: {otp_code}")
+            print(f"🎭 DEMO MODE: OTP for {receiver_email} is: {otp_code}")
             return jsonify({
                 'message': 'OTP generated for demo',
                 'otp': otp_code  # Return OTP for testing/demo
@@ -484,13 +510,15 @@ def send_otp():
 
         # Check if email credentials are properly configured
         if not sender_email or not sender_password:
+            error_msg = "Email service not configured on server - missing credentials"
+            print(f"❌ {error_msg}")
             return jsonify({
-                'error': 'Email service not configured on server',
+                'error': error_msg,
                 'otp': otp_code  # Return OTP so user can still verify
             }), 500
 
         # Attempt to send email
-        email_sent = send_otp_email(receiver_email, otp_code)
+        email_sent, error_details = send_otp_email(receiver_email, otp_code)
 
         if email_sent:
             return jsonify({
@@ -498,14 +526,27 @@ def send_otp():
             }), 200
         else:
             # If email fails, return OTP so user can still verify
-            print(f"Email sending failed for {receiver_email}. OTP: {otp_code}")
+            print(f"❌ Email sending failed for {receiver_email}. OTP: {otp_code}")
+
+            # Create detailed error message for debugging
+            error_message = 'Failed to send OTP email. '
+            if error_details:
+                error_message += f'Errors: {"; ".join(error_details[:3])}'  # Show first 3 errors
+
             return jsonify({
-                'error': 'Failed to send OTP email. Please use this OTP to verify:',
-                'otp': otp_code  # Return OTP for manual entry
+                'error': error_message,
+                'otp': otp_code,  # Return OTP for manual entry
+                'debug_info': {
+                    'sender_configured': bool(sender_email),
+                    'password_configured': bool(sender_password),
+                    'smtp_server': smtp_server,
+                    'on_render': bool(os.environ.get('RENDER'))
+                }
             }), 500
 
     except Exception as e:
-        print(f"Error in send_otp route: {e}")
+        print(f"💥 ERROR in send_otp route: {e}")
+        traceback.print_exc()
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 
@@ -903,7 +944,8 @@ def debug_email():
         'demo_mode': demo_mode,
         'has_sender_password': bool(sender_password and sender_password != 'onvrtvvwmvlzphth'),
         'environment': os.environ.get('RENDER', 'Local development'),
-        'render': bool(os.environ.get('RENDER'))
+        'render': bool(os.environ.get('RENDER')),
+        'sender_password_length': len(sender_password) if sender_password else 0
     }
     return jsonify(debug_info)
 
@@ -919,18 +961,50 @@ def test_email():
             return jsonify({'error': 'Email required'}), 400
 
         # Test email sending
-        success = send_otp_email(test_email, "123456")
+        success, error_details = send_otp_email(test_email, "123456")
 
         return jsonify({
             'success': success,
             'demo_mode': demo_mode,
             'sender_email_configured': bool(sender_email),
             'sender_password_configured': bool(sender_password),
+            'error_details': error_details if not success else None,
             'message': 'Test email sent' if success else 'Failed to send test email'
         })
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/email-diagnostics')
+def email_diagnostics():
+    """Comprehensive email diagnostics endpoint"""
+    diagnostics = {
+        'email_config': {
+            'sender_email': sender_email,
+            'smtp_server': smtp_server,
+            'smtp_port': smtp_port,
+            'demo_mode': demo_mode,
+            'has_sender_password': bool(sender_password),
+            'sender_password_length': len(sender_password) if sender_password else 0
+        },
+        'environment': {
+            'on_render': bool(os.environ.get('RENDER')),
+            'python_version': os.environ.get('PYTHON_VERSION', 'Unknown'),
+            'render_service': os.environ.get('RENDER_SERVICE_NAME', 'Unknown')
+        },
+        'network_info': {
+            'timeout_support': 'Yes',
+            'outbound_ports': '587, 465, 25 (typically blocked on Render)'
+        },
+        'recommendations': [
+            'Use dedicated email service like SendGrid for Render deployment',
+            'Check if outbound SMTP is allowed on your Render plan',
+            'Verify Gmail App Password is correct',
+            'Try using different SMTP port'
+        ]
+    }
+    return jsonify(diagnostics)
 
 
 @app.route('/health')
@@ -941,7 +1015,8 @@ def health_check():
         'timestamp': datetime.now().isoformat(),
         'database': 'connected' if hasattr(db, 'command') else 'dummy',
         'email_configured': bool(sender_email and sender_password),
-        'demo_mode': demo_mode
+        'demo_mode': demo_mode,
+        'on_render': bool(os.environ.get('RENDER'))
     })
 
 
@@ -953,6 +1028,7 @@ if __name__ == '__main__':
     print(f"SMTP Server: {smtp_server}:{smtp_port}")
     print(f"Demo Mode: {demo_mode}")
     print(f"Environment: {'Render' if os.environ.get('RENDER') else 'Local'}")
+    print(f"Sender Password Length: {len(sender_password) if sender_password else 0}")
 
     if demo_mode:
         print("⚠️  RUNNING IN DEMO MODE - OTP emails will not be sent")
@@ -960,6 +1036,11 @@ if __name__ == '__main__':
         print("⚠️  Email credentials not configured properly")
     else:
         print("✅ Email configuration loaded")
+
+    # Render-specific warnings
+    if os.environ.get('RENDER'):
+        print("🌐 Running on Render - SMTP ports 587/465 may be blocked")
+        print("💡 Recommendation: Use SendGrid or similar service for reliable email")
 
     print("=== Server Starting ===")
     app.run(debug=True, host='0.0.0.0', port=5000)
