@@ -125,7 +125,7 @@ else:
 
 # Email configuration - Use environment variables
 sender_email = os.environ.get('SENDER_EMAIL', 'adityabhoir291@gmail.com')
-sender_password = os.environ.get('SENDER_PASSWORD', 'sheohmubyfsmoomg')
+sender_password = os.environ.get('SENDER_PASSWORD', 'onvrtvvwmvlzphth')
 smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
 smtp_port = int(os.environ.get('SMTP_PORT', '587'))
 demo_mode = os.environ.get('DEMO_MODE', 'false').lower() == 'true'
@@ -277,7 +277,7 @@ def validate_user_data(user_data):
 
 
 def send_otp_email(receiver_email, otp_code):
-    """Enhanced OTP email sending with better error handling"""
+    """Enhanced OTP email sending with better error handling for Render"""
     try:
         # Create message container
         msg = MIMEMultipart('alternative')
@@ -362,35 +362,41 @@ def send_otp_email(receiver_email, otp_code):
         # Attach HTML content
         msg.attach(MIMEText(html_body, 'html'))
 
-        # Enhanced email sending with multiple fallbacks
+        # Enhanced email sending with better timeout and error handling
         success = False
         error_messages = []
 
-        # Try TLS first (port 587)
-        try:
-            print(f"Attempting to send email via {smtp_server}:{smtp_port} (TLS)...")
-            server = smtplib.SMTP(smtp_server, smtp_port)
-            server.starttls()  # Enable TLS encryption
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, receiver_email, msg.as_string())
-            server.quit()
-            print(f"OTP email sent successfully to {receiver_email} via TLS")
-            success = True
-        except Exception as e:
-            error_messages.append(f"TLS failed: {str(e)}")
-            print(f"TLS method failed: {e}")
+        # Try different methods with increased timeout for Render
+        methods = [
+            {'name': 'TLS (587)', 'port': 587, 'ssl': False},
+            {'name': 'SSL (465)', 'port': 465, 'ssl': True},
+            {'name': 'TLS (25)', 'port': 25, 'ssl': False}
+        ]
 
-            # Try SSL (port 465) as fallback
+        for method in methods:
             try:
-                print("Attempting SSL fallback...")
-                with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-                    server.login(sender_email, sender_password)
-                    server.sendmail(sender_email, receiver_email, msg.as_string())
-                print(f"OTP email sent successfully to {receiver_email} via SSL")
+                print(f"Attempting {method['name']}...")
+
+                if method['ssl']:
+                    server = smtplib.SMTP_SSL(smtp_server, method['port'], timeout=30)
+                else:
+                    server = smtplib.SMTP(smtp_server, method['port'], timeout=30)
+                    if not method['ssl'] and method['port'] == 587:
+                        server.starttls()  # Enable TLS encryption
+
+                server.login(sender_email, sender_password)
+                server.sendmail(sender_email, receiver_email, msg.as_string())
+                server.quit()
+
+                print(f"✓ OTP email sent successfully to {receiver_email} via {method['name']}")
                 success = True
-            except Exception as ssl_error:
-                error_messages.append(f"SSL failed: {str(ssl_error)}")
-                print(f"SSL method also failed: {ssl_error}")
+                break
+
+            except Exception as e:
+                error_msg = f"{method['name']} failed: {str(e)}"
+                error_messages.append(error_msg)
+                print(f"✗ {error_msg}")
+                continue
 
         if not success:
             print(f"All email sending methods failed for {receiver_email}")
@@ -447,11 +453,10 @@ def invoice_pdf():
 def send_otp():
     try:
         data = request.get_json()
-        receiver_email = data.get('receiver_email')
-        is_demo = data.get('is_demo', False)
+        receiver_email = data.get('receiver_email', '').strip().lower()
 
         if not receiver_email:
-            return jsonify({'error': 'Missing email'}), 400
+            return jsonify({'error': 'Email is required'}), 400
 
         # Email validation
         if not validate_email(receiver_email):
@@ -469,33 +474,34 @@ def send_otp():
         }
         otps_collection.replace_one({'email': receiver_email}, otp_doc, upsert=True)
 
-        # For demo emails or testing, we don't actually send the email
-        if is_demo or demo_mode:
-            print(f"DEMO MODE: OTP for {receiver_email} would be: {otp_code}")
+        # If demo mode is enabled, return OTP directly
+        if demo_mode:
+            print(f"DEMO MODE: OTP for {receiver_email} is: {otp_code}")
             return jsonify({
                 'message': 'OTP generated for demo',
                 'otp': otp_code  # Return OTP for testing/demo
             }), 200
 
-        # Check if email credentials are configured
-        if not sender_email or not sender_password or sender_password == 'your_app_password_here':
+        # Check if email credentials are properly configured
+        if not sender_email or not sender_password:
             return jsonify({
-                'error': 'Email service not configured',
-                'otp': otp_code  # Return OTP for development
+                'error': 'Email service not configured on server',
+                'otp': otp_code  # Return OTP so user can still verify
             }), 500
 
-        # Send email
-        success = send_otp_email(receiver_email, otp_code)
+        # Attempt to send email
+        email_sent = send_otp_email(receiver_email, otp_code)
 
-        if success:
+        if email_sent:
             return jsonify({
-                'message': 'OTP sent successfully'
+                'message': 'OTP sent successfully to your email'
             }), 200
         else:
-            # But don't delete OTP - let user try with manual entry
+            # If email fails, return OTP so user can still verify
+            print(f"Email sending failed for {receiver_email}. OTP: {otp_code}")
             return jsonify({
-                'error': 'Failed to send OTP email. Please check your email address or try again.',
-                'otp': otp_code  # Return OTP for manual entry in case of email failure
+                'error': 'Failed to send OTP email. Please use this OTP to verify:',
+                'otp': otp_code  # Return OTP for manual entry
             }), 500
 
     except Exception as e:
@@ -895,11 +901,36 @@ def debug_email():
         'smtp_server': smtp_server,
         'smtp_port': smtp_port,
         'demo_mode': demo_mode,
-        'has_sender_password': bool(sender_password and sender_password != 'sheohmubyfsmoomg'),
+        'has_sender_password': bool(sender_password and sender_password != 'onvrtvvwmvlzphth'),
         'environment': os.environ.get('RENDER', 'Local development'),
         'render': bool(os.environ.get('RENDER'))
     }
     return jsonify(debug_info)
+
+
+@app.route('/test-email', methods=['POST'])
+def test_email():
+    """Test email configuration"""
+    try:
+        data = request.get_json()
+        test_email = data.get('email')
+
+        if not test_email:
+            return jsonify({'error': 'Email required'}), 400
+
+        # Test email sending
+        success = send_otp_email(test_email, "123456")
+
+        return jsonify({
+            'success': success,
+            'demo_mode': demo_mode,
+            'sender_email_configured': bool(sender_email),
+            'sender_password_configured': bool(sender_password),
+            'message': 'Test email sent' if success else 'Failed to send test email'
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/health')
@@ -908,7 +939,9 @@ def health_check():
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
-        'database': 'connected' if hasattr(db, 'command') else 'dummy'
+        'database': 'connected' if hasattr(db, 'command') else 'dummy',
+        'email_configured': bool(sender_email and sender_password),
+        'demo_mode': demo_mode
     })
 
 
