@@ -57,7 +57,7 @@
             overflow-x: hidden;
             position: relative;
             color: white;
-            background: #131827; /* Fallback background color */
+            background: #131827;
         }
 
         .container {
@@ -371,216 +371,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            display: none;
-            animation: fadeIn 0.4s;
-            backdrop-filter: blur(8px);
-        }
-
-        .verification-modal {
-            background: var(--glass);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border-radius: 24px;
-            border: 1px solid var(--glass-border);
-            width: 90%;
-            max-width: 480px;
-            padding: 36px;
-            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6),
-                        0 0 0 1px rgba(255, 255, 255, 0.1),
-                        var(--neon-glow);
-            position: relative;
-            animation: modalAppear 0.5s ease-out;
-            color: white;
-            transform: translateZ(0);
-        }
-
-        @keyframes modalAppear {
-            from {
-                opacity: 0;
-                transform: translateY(-40px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .modal-header {
-            text-align: center;
-            margin-bottom: 28px;
-        }
-
-        .modal-header h2 {
-            color: white;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
-
-        .modal-header p {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 15px;
-        }
-
-        .modal-content {
-            margin-bottom: 28px;
-        }
-
-        .email-display {
-            display: flex;
-            align-items: center;
-            background: var(--glass-dark);
-            padding: 18px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            border: 1px solid var(--glass-border);
-            flex-wrap: wrap;
-        }
-
-        .email-text {
-            flex: 1;
-            font-weight: 500;
-            color: white;
-            min-width: 200px;
-            font-size: 15px;
-        }
-
-        .edit-email {
-            color: var(--primary-light);
-            cursor: pointer;
-            font-weight: 600;
-            margin-left: 16px;
-            padding: 8px 14px;
-            border-radius: 8px;
-            transition: background-color 0.2s;
-            font-size: 14px;
-        }
-
-        .edit-email:hover {
-            background-color: rgba(79, 70, 229, 0.25);
-        }
-
-        .otp-inputs {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 28px;
-            gap: 12px;
-        }
-
-        .otp-input {
-            flex: 1;
-            height: 60px;
-            text-align: center;
-            font-size: 22px;
-            font-weight: bold;
-            border: 2px solid var(--glass-border);
-            border-radius: 12px;
-            transition: border-color 0.2s;
-            background: var(--glass-dark);
-            color: white;
-        }
-
-        .otp-input:focus {
-            border-color: var(--primary);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
-            background: rgba(0, 0, 0, 0.4);
-        }
-
-        .resend-otp {
-            text-align: center;
-            margin-top: 28px;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 15px;
-        }
-
-        .resend-otp a {
-            color: var(--primary-light);
-            text-decoration: none;
-            font-weight: 600;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-
-        .resend-otp a:hover {
-            text-decoration: underline;
-            color: var(--primary);
-        }
-
-        .close-modal {
-            position: absolute;
-            top: 24px;
-            right: 24px;
-            font-size: 28px;
-            cursor: pointer;
-            color: var(--gray);
-            transition: all 0.2s;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-
-        .close-modal:hover {
-            color: white;
-            background-color: rgba(255, 255, 255, 0.1);
-            transform: rotate(90deg);
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            margin: 24px 0;
-        }
-
-        .loading-spinner {
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top: 3px solid var(--primary);
-            border-radius: 50%;
-            width: 36px;
-            height: 36px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 14px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .api-response {
-            margin-top: 20px;
-            padding: 14px 18px;
-            border-radius: 12px;
-            display: none;
-            text-align: center;
-            font-size: 15px;
-        }
-
-        .success {
-            background: rgba(5, 150, 105, 0.25);
-            color: #10b981;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        .error {
-            background: rgba(239, 68, 68, 0.25);
-            color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-
         .form-footer {
             text-align: center;
             margin-top: 28px;
@@ -590,7 +380,6 @@
             font-size: 13px;
         }
 
-        /* ADDED: Validation Styles */
         .error-message {
             color: #f87171;
             font-size: 13px;
@@ -671,7 +460,6 @@
             color: #9ca3af;
         }
 
-        /* ADDED: Login specific response area */
         .login-response {
             margin-top: 20px;
             padding: 14px 18px;
@@ -679,6 +467,27 @@
             display: none;
             text-align: center;
             font-size: 15px;
+        }
+
+        .register-response {
+            margin-top: 20px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            display: none;
+            text-align: center;
+            font-size: 15px;
+        }
+
+        .success {
+            background: rgba(5, 150, 105, 0.25);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.25);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
 
         @media (max-width: 576px) {
@@ -692,11 +501,6 @@
 
             .form-container {
                 padding: 28px 24px;
-            }
-
-            .otp-input {
-                height: 54px;
-                font-size: 20px;
             }
 
             .gender-row {
@@ -713,20 +517,6 @@
                 top: 50%;
                 transform: translateY(-50%);
             }
-
-            .verification-modal {
-                padding: 28px 24px;
-            }
-
-            .email-display {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .edit-email {
-                margin-left: 0;
-                margin-top: 12px;
-            }
         }
     </style>
 </head>
@@ -741,6 +531,9 @@
 
                 <div class="form-container">
                     <form id="registrationForm">
+                        <!-- ADDED: Registration specific response area -->
+                        <div id="registerResponse" class="register-response"></div>
+
                         <div class="form-group">
                             <label for="fullName">Full Name</label>
                             <input type="text" id="fullName" name="fullName" placeholder="Enter your full name" required>
@@ -842,7 +635,6 @@
 
                 <div class="form-container">
                     <form id="loginForm">
-                        <!-- ADDED: Login specific response area -->
                         <div id="loginResponse" class="login-response"></div>
 
                         <div class="form-group">
@@ -870,51 +662,6 @@
                         </div>
                     </form>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Verification Modal -->
-    <div class="modal-overlay" id="verificationModal">
-        <div class="verification-modal">
-            <span class="close-modal" id="closeModal">&times;</span>
-
-            <div class="modal-header">
-                <h2>Verify Your Email</h2>
-                <p>We've sent a verification code to your email</p>
-            </div>
-
-            <div class="modal-content">
-                <div class="email-display">
-                    <div class="email-text" id="displayEmail">user@example.com</div>
-                    <div class="edit-email" id="editEmail">Edit</div>
-                </div>
-
-                <div class="form-group">
-                    <label>Enter Verification Code</label>
-                    <div class="otp-inputs">
-                        <input type="text" class="otp-input" maxlength="1" id="otp1" oninput="moveToNext(1)">
-                        <input type="text" class="otp-input" maxlength="1" id="otp2" oninput="moveToNext(2)">
-                        <input type="text" class="otp-input" maxlength="1" id="otp3" oninput="moveToNext(3)">
-                        <input type="text" class="otp-input" maxlength="1" id="otp4" oninput="moveToNext(4)">
-                        <input type="text" class="otp-input" maxlength="1" id="otp5" oninput="moveToNext(5)">
-                        <input type="text" class="otp-input" maxlength="1" id="otp6" oninput="moveToNext(6)">
-                    </div>
-                    <div class="error-message" id="otpError">Please enter a complete 6-digit code</div>
-                </div>
-
-                <button type="button" class="btn" id="verifyOtp">Verify & Continue</button>
-
-                <div class="resend-otp">
-                    Didn't receive the code? <a id="resendOtp">Resend</a>
-                </div>
-
-                <div class="loading" id="loadingIndicator">
-                    <div class="loading-spinner"></div>
-                    <p id="loadingText">Sending email...</p>
-                </div>
-
-                <div id="apiResponse" class="api-response"></div>
             </div>
         </div>
     </div>
@@ -966,15 +713,15 @@
         document.getElementById('loginBtn').addEventListener('click', function() {
             document.getElementById('registerPage').classList.remove('active');
             document.getElementById('loginPage').classList.add('active');
-            // Clear any previous login errors
             clearLoginResponse();
+            clearRegisterResponse();
         });
 
         document.getElementById('backToRegister').addEventListener('click', function() {
             document.getElementById('loginPage').classList.remove('active');
             document.getElementById('registerPage').classList.add('active');
-            // Clear any previous login errors
             clearLoginResponse();
+            clearRegisterResponse();
         });
 
         // Field validation functions
@@ -1006,7 +753,6 @@
                 case 'phone':
                     const phone = document.getElementById('phone').value.replace(/\D/g, '');
                     isValid = patterns.phone.test(phone);
-                    // Update phone field with cleaned value
                     if (isValid) {
                         document.getElementById('phone').value = phone;
                     }
@@ -1042,7 +788,6 @@
                 const parentElement = inputElement.parentElement;
 
                 if (fieldName === 'password') {
-                    // For password, we handle it differently due to the container
                     parentElement.classList.remove('valid', 'invalid');
                 } else {
                     parentElement.classList.remove('valid', 'invalid');
@@ -1112,7 +857,6 @@
             const requirements = document.getElementById('passwordRequirements');
             requirements.style.display = 'block';
 
-            // Check each requirement
             document.getElementById('lengthReq').className = password.length >= 8 ?
                 'requirement met' : 'requirement not-met';
             document.getElementById('uppercaseReq').className = /[A-Z]/.test(password) ?
@@ -1130,14 +874,12 @@
         document.getElementById('age').addEventListener('input', () => validateField('age'));
         document.getElementById('email').addEventListener('input', () => validateField('email'));
         document.getElementById('phone').addEventListener('input', () => {
-            // Clean phone input (remove non-digits)
             const phone = document.getElementById('phone').value.replace(/\D/g, '');
             document.getElementById('phone').value = phone;
             validateField('phone');
         });
         document.getElementById('password').addEventListener('input', () => {
             validateField('password');
-            // Also validate confirm password when password changes
             if (document.getElementById('confirmPassword').value) {
                 validateField('confirmPassword');
             }
@@ -1147,8 +889,11 @@
         document.getElementById('loginPassword').addEventListener('input', () => validateField('loginPassword'));
 
         // Form validation for registration
-        document.getElementById('registrationForm').addEventListener('submit', function(e) {
+        document.getElementById('registrationForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+
+            // Clear previous responses
+            clearRegisterResponse();
 
             // Validate all fields
             const fields = ['fullName', 'age', 'gender', 'email', 'phone', 'password', 'confirmPassword'];
@@ -1157,7 +902,6 @@
             fields.forEach(field => {
                 if (!validateField(field)) {
                     isValid = false;
-                    // Scroll to first error
                     if (isValid === false) {
                         const firstError = document.getElementById(`${field}Error`);
                         if (firstError && firstError.style.display === 'block') {
@@ -1168,7 +912,7 @@
             });
 
             if (!isValid) {
-                showResponse('Please fix the errors in the form before submitting.', 'error');
+                showRegisterResponse('Please fix the errors in the form before submitting.', 'error');
                 return;
             }
 
@@ -1182,15 +926,74 @@
                 password: document.getElementById('password').value
             };
 
-            // Show verification modal
-            document.getElementById('displayEmail').textContent = userData.email;
-            document.getElementById('verificationModal').style.display = 'flex';
+            try {
+                // Show loading state
+                const registerBtn = document.getElementById('registerBtn');
+                const originalText = registerBtn.textContent;
+                registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
+                registerBtn.disabled = true;
 
-            // Send OTP
-            sendOtp();
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ user_data: userData })
+                });
+
+                const data = await response.json();
+
+                // Restore button state
+                registerBtn.innerHTML = originalText;
+                registerBtn.disabled = false;
+
+                if (response.ok) {
+                    // Registration successful - show login page
+                    showRegisterResponse('Registration successful! You can now login.', 'success');
+                    document.getElementById('registerPage').classList.remove('active');
+                    document.getElementById('loginPage').classList.add('active');
+                    document.getElementById('loginEmail').value = userData.email;
+                    // Reset the registration form
+                    document.getElementById('registrationForm').reset();
+                } else {
+                    // Show specific error message for existing user
+                    showRegisterResponse(data.error, 'error');
+
+                    // Highlight the email field if user already exists
+                    if (data.error.includes('already registered') || data.error.includes('already exists')) {
+                        document.getElementById('email').classList.add('input-error');
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                const registerBtn = document.getElementById('registerBtn');
+                registerBtn.innerHTML = 'Register Now';
+                registerBtn.disabled = false;
+                showRegisterResponse('Registration failed. Please try again.', 'error');
+            }
         });
 
-        // ADDED: Clear login response function
+        // Clear register response function
+        function clearRegisterResponse() {
+            const registerResponse = document.getElementById('registerResponse');
+            registerResponse.style.display = 'none';
+            registerResponse.textContent = '';
+            registerResponse.className = 'register-response';
+        }
+
+        // Show register response function
+        function showRegisterResponse(message, type) {
+            const registerResponse = document.getElementById('registerResponse');
+            registerResponse.textContent = message;
+            registerResponse.className = `register-response ${type}`;
+            registerResponse.style.display = 'block';
+            registerResponse.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => {
+                registerResponse.style.display = 'none';
+            }, 5000);
+        }
+
+        // Clear login response function
         function clearLoginResponse() {
             const loginResponse = document.getElementById('loginResponse');
             loginResponse.style.display = 'none';
@@ -1198,29 +1001,23 @@
             loginResponse.className = 'login-response';
         }
 
-        // ADDED: Show login response function
+        // Show login response function
         function showLoginResponse(message, type) {
             const loginResponse = document.getElementById('loginResponse');
             loginResponse.textContent = message;
             loginResponse.className = `login-response ${type}`;
             loginResponse.style.display = 'block';
-
-            // Scroll to the response message
             loginResponse.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
             setTimeout(() => {
                 loginResponse.style.display = 'none';
             }, 5000);
         }
 
-        // Login form submission - FIXED: Now properly shows restrictions for wrong credentials
+        // Login form submission
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-
-            // Clear previous login response
             clearLoginResponse();
 
-            // Validate login form fields
             const isEmailValid = validateField('loginEmail');
             const isPasswordValid = validateField('loginPassword');
 
@@ -1233,7 +1030,6 @@
             const loginPassword = document.getElementById('loginPassword').value;
 
             try {
-                // Show loading state
                 const loginBtn = document.querySelector('#loginForm .btn');
                 const originalText = loginBtn.textContent;
                 loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
@@ -1251,16 +1047,11 @@
                 });
 
                 const data = await response.json();
-
-                // Restore button state
                 loginBtn.innerHTML = originalText;
                 loginBtn.disabled = false;
 
                 if (data.error) {
-                    // Show error message in login response area
                     showLoginResponse(data.error, 'error');
-
-                    // Add input error styling to both fields for wrong credentials
                     document.getElementById('loginEmail').classList.add('input-error');
                     document.getElementById('loginPassword').classList.add('input-error');
                 } else {
@@ -1271,11 +1062,9 @@
                 }
             } catch (error) {
                 console.error('Error:', error);
-                // Restore button state in case of error
                 const loginBtn = document.querySelector('#loginForm .btn');
                 loginBtn.innerHTML = 'Login';
                 loginBtn.disabled = false;
-
                 showLoginResponse('Login failed. Please try again.', 'error');
             }
         });
@@ -1289,151 +1078,9 @@
             this.classList.remove('input-error');
         });
 
-        // Close modal
-        document.getElementById('closeModal').addEventListener('click', function() {
-            document.getElementById('verificationModal').style.display = 'none';
-            clearOtpInputs();
+        document.getElementById('email').addEventListener('input', function() {
+            this.classList.remove('input-error');
         });
-
-        // Edit email
-        document.getElementById('editEmail').addEventListener('click', function() {
-            const newEmail = prompt("Enter your email address:", userData.email);
-            if (newEmail && newEmail !== userData.email) {
-                if (patterns.email.test(newEmail)) {
-                    userData.email = newEmail;
-                    document.getElementById('displayEmail').textContent = newEmail;
-                    document.getElementById('email').value = newEmail;
-                    sendOtp();
-                } else {
-                    alert("Please enter a valid email address");
-                }
-            }
-        });
-
-        // Verify OTP
-        document.getElementById('verifyOtp').addEventListener('click', function() {
-            const enteredOtp = Array.from({ length: 6 }, (_, i) => document.getElementById(`otp${i + 1}`).value).join('');
-            if (enteredOtp.length !== 6) {
-                document.getElementById('otpError').style.display = 'block';
-                return;
-            }
-            document.getElementById('otpError').style.display = 'none';
-            verifyOtpWithBackend(enteredOtp);
-        });
-
-        // Resend OTP
-        document.getElementById('resendOtp').addEventListener('click', sendOtp);
-
-        // Send OTP
-        function sendOtp() {
-            document.getElementById('loadingText').textContent = 'Sending email...';
-            document.getElementById('loadingIndicator').style.display = 'block';
-            document.getElementById('apiResponse').style.display = 'none';
-            clearOtpInputs();
-            sendOtpToBackend(userData.email);
-        }
-
-        // Send OTP to backend
-        async function sendOtpToBackend(email) {
-            try {
-                const response = await fetch('/send-otp', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        receiver_email: email
-                    })
-                });
-
-                const data = await response.json();
-                document.getElementById('loadingIndicator').style.display = 'none';
-
-                if (response.ok) {
-                    showResponse(data.message || 'Verification code sent successfully!', 'success');
-                } else {
-                    showResponse(data.error || 'Error sending verification code.', 'error');
-                }
-            } catch (error) {
-                document.getElementById('loadingIndicator').style.display = 'none';
-                showResponse('Error sending OTP. Please try again.', 'error');
-                console.error('Error sending OTP:', error);
-            }
-        }
-
-        // Verify OTP with backend
-        async function verifyOtpWithBackend(otp) {
-            try {
-                document.getElementById('loadingText').textContent = 'Verifying OTP...';
-                document.getElementById('loadingIndicator').style.display = 'block';
-                document.getElementById('apiResponse').style.display = 'none';
-
-                const response = await fetch('/verify-otp', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        email: userData.email,
-                        otp_code: otp,
-                        user_data: userData
-                    })
-                });
-
-                const data = await response.json();
-                document.getElementById('loadingIndicator').style.display = 'none';
-
-                if (response.ok) {
-                    showResponse('Email verified successfully! Redirecting to login...', 'success');
-                    setTimeout(() => {
-                        document.getElementById('verificationModal').style.display = 'none';
-                        document.getElementById('registrationForm').reset();
-                        document.getElementById('registerPage').classList.remove('active');
-                        document.getElementById('loginPage').classList.add('active');
-                        document.getElementById('loginEmail').value = userData.email;
-                    }, 1500);
-                } else {
-                    showResponse(data.error || 'Invalid verification code.', 'error');
-                }
-            } catch (error) {
-                document.getElementById('loadingIndicator').style.display = 'none';
-                showResponse('Error verifying OTP. Please try again.', 'error');
-                console.error('Error verifying OTP:', error);
-            }
-        }
-
-        // Move to next OTP input
-        function moveToNext(current) {
-            const currentInput = document.getElementById(`otp${current}`);
-            const nextInput = document.getElementById(`otp${current + 1}`);
-
-            if (currentInput.value.length === 1 && nextInput) {
-                nextInput.focus();
-            }
-
-            if (current === 6 && currentInput.value.length === 1) {
-                document.getElementById('verifyOtp').click();
-            }
-        }
-
-        // Clear OTP inputs
-        function clearOtpInputs() {
-            for (let i = 1; i <= 6; i++) {
-                document.getElementById(`otp${i}`).value = '';
-            }
-            document.getElementById('otp1').focus();
-        }
-
-        // Show response message (for registration/OTP)
-        function showResponse(message, type) {
-            const responseElement = document.getElementById('apiResponse');
-            responseElement.textContent = message;
-            responseElement.className = `api-response ${type}`;
-            responseElement.style.display = 'block';
-            setTimeout(() => {
-                responseElement.style.display = 'none';
-            }, 5000);
-        }
     </script>
 </body>
 </html>

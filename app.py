@@ -1,8 +1,5 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 from pymongo import MongoClient
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 import random
 from datetime import datetime, timedelta
 import imaplib
@@ -16,7 +13,6 @@ from medicine_data import default_medicines_data
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 import urllib.parse
-import traceback
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'e6db0ccf32af7bdb06579f263147b8d4')
@@ -109,7 +105,6 @@ except Exception as e:
     db = DummyDB()
 
 users_collection = db['users']
-otps_collection = db['otps']
 medicines_collection = db['medicines']
 bills_collection = db['bills']
 
@@ -123,13 +118,6 @@ if hasattr(db, 'command'):  # Check if it's real MongoDB
         print(f"Could not create indexes: {e}")
 else:
     print("Using dummy database - skipping index creation")
-
-# Email configuration - Use environment variables
-sender_email = os.environ.get('SENDER_EMAIL', 'adityabhoir291@gmail.com')
-sender_password = os.environ.get('SENDER_PASSWORD', 'onvrtvvwmvlzphth')
-smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
-smtp_port = int(os.environ.get('SMTP_PORT', '587'))
-demo_mode = os.environ.get('DEMO_MODE', 'false').lower() == 'true'
 
 BASE_PDF_DIR = os.path.join(os.path.dirname(__file__), 'shree_samarth_enterprises_bills')
 
@@ -277,164 +265,6 @@ def validate_user_data(user_data):
     return errors
 
 
-def send_otp_email(receiver_email, otp_code):
-    """Enhanced OTP email sending with detailed error logging for Render"""
-    try:
-        # Create message container
-        msg = MIMEMultipart('alternative')
-        msg['From'] = sender_email
-        msg['To'] = receiver_email
-        msg['Subject'] = "Your One-Time Password (OTP) - Pharmacy Management System"
-
-        html_body = f"""
-        <html>
-        <head>
-            <style>
-                body {{
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    background-color: #f9f9f9;
-                    margin: 0;
-                    padding: 0;
-                    color: #555;
-                }}
-                .container {{
-                    width: 100%;
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background-color: #ffffff;
-                    padding: 20px;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-                }}
-                h1 {{
-                    font-size: 26px;
-                    color: #4CAF50;
-                    text-align: center;
-                    margin-bottom: 20px;
-                }}
-                .greeting {{
-                    font-size: 18px;
-                    color: #333;
-                    margin-bottom: 15px;
-                    text-align: center;
-                }}
-                .otp {{
-                    background-color: #f4f4f9;
-                    border-left: 4px solid #4CAF50;
-                    padding: 15px;
-                    font-size: 32px;
-                    font-weight: bold;
-                    text-align: center;
-                    border-radius: 6px;
-                    margin: 20px 0;
-                }}
-                p {{
-                    font-size: 16px;
-                    line-height: 1.6;
-                    color: #555;
-                    text-align: center;
-                }}
-                .footer {{
-                    text-align: center;
-                    margin-top: 40px;
-                    font-size: 14px;
-                    color: #888;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>Email Verification</h1>
-                <p class="greeting"><strong>Hello,</strong></p>
-                <p>Please verify your email address with the following code:</p>
-                <div class="otp">
-                    <strong>{otp_code}</strong>
-                </div>
-                <p>Enter this code in the verification page to complete the process.</p>
-                <p><small>This OTP will expire in 10 minutes.</small></p>
-                <div class="footer">
-                    <p>Pharmacy Management System</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-
-        # Attach HTML content
-        msg.attach(MIMEText(html_body, 'html'))
-
-        # Enhanced email sending with detailed error logging for Render
-        success = False
-        detailed_errors = []
-
-        # Try different methods with increased timeout for Render
-        methods = [
-            {'name': 'TLS (587)', 'port': 587, 'ssl': False},
-            {'name': 'SSL (465)', 'port': 465, 'ssl': True},
-            {'name': 'TLS (25)', 'port': 25, 'ssl': False}
-        ]
-
-        print(f"🔧 Attempting to send OTP email to: {receiver_email}")
-        print(f"🔧 Using sender: {sender_email}")
-        print(f"🔧 SMTP Server: {smtp_server}")
-
-        for method in methods:
-            try:
-                print(f"🔄 Trying {method['name']} connection...")
-
-                if method['ssl']:
-                    server = smtplib.SMTP_SSL(smtp_server, method['port'], timeout=30)
-                    print(f"✅ SSL connection established on port {method['port']}")
-                else:
-                    server = smtplib.SMTP(smtp_server, method['port'], timeout=30)
-                    print(f"✅ TCP connection established on port {method['port']}")
-                    if not method['ssl'] and method['port'] == 587:
-                        server.starttls()  # Enable TLS encryption
-                        print("✅ TLS encryption enabled")
-
-                print("🔐 Attempting login...")
-                server.login(sender_email, sender_password)
-                print("✅ Login successful")
-
-                print("📧 Sending email...")
-                server.sendmail(sender_email, receiver_email, msg.as_string())
-                server.quit()
-
-                print(f"✅ OTP email sent successfully to {receiver_email} via {method['name']}")
-                success = True
-                break
-
-            except Exception as e:
-                error_detail = f"{method['name']} failed: {str(e)}"
-                detailed_errors.append(error_detail)
-                print(f"❌ {error_detail}")
-                print(f"🔍 Error type: {type(e).__name__}")
-
-                # Print full traceback for debugging
-                traceback.print_exc()
-                continue
-
-        if not success:
-            print(f"❌ ALL email sending methods failed for {receiver_email}")
-            print("📋 Error summary:")
-            for i, error in enumerate(detailed_errors, 1):
-                print(f"  {i}. {error}")
-
-            # Additional diagnostic information
-            print("🔍 Diagnostic Info:")
-            print(f"   - Sender Email: {sender_email}")
-            print(f"   - SMTP Server: {smtp_server}")
-            print(f"   - Demo Mode: {demo_mode}")
-            print(f"   - Render Environment: {os.environ.get('RENDER', 'No')}")
-
-        return success, detailed_errors
-
-    except Exception as e:
-        print(f"💥 UNEXPECTED ERROR in send_otp_email: {e}")
-        traceback.print_exc()
-        return False, [f"Unexpected error: {str(e)}"]
-
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -475,121 +305,32 @@ def invoice_pdf():
     return render_template('invoice_pdf.html', bill_data=bill_data)
 
 
-@app.route('/send-otp', methods=['POST'])
-def send_otp():
+@app.route('/register', methods=['POST'])
+def register():
     try:
         data = request.get_json()
-        receiver_email = data.get('receiver_email', '').strip().lower()
-
-        if not receiver_email:
-            return jsonify({'error': 'Email is required'}), 400
-
-        # Email validation
-        if not validate_email(receiver_email):
-            return jsonify({'error': 'Invalid email format'}), 400
-
-        # Generate OTP on server (6 digits)
-        otp_code = ''.join(random.choices("0123456789", k=6))
-
-        # Store OTP in MongoDB with 10 min expiry
-        otp_doc = {
-            'email': receiver_email,
-            'otp': otp_code,
-            'timestamp': datetime.now(),
-            'expires_at': datetime.now() + timedelta(minutes=10)
-        }
-        otps_collection.replace_one({'email': receiver_email}, otp_doc, upsert=True)
-
-        # If demo mode is enabled, return OTP directly
-        if demo_mode:
-            print(f"🎭 DEMO MODE: OTP for {receiver_email} is: {otp_code}")
-            return jsonify({
-                'message': 'OTP generated for demo',
-                'otp': otp_code  # Return OTP for testing/demo
-            }), 200
-
-        # Check if email credentials are properly configured
-        if not sender_email or not sender_password:
-            error_msg = "Email service not configured on server - missing credentials"
-            print(f"❌ {error_msg}")
-            return jsonify({
-                'error': error_msg,
-                'otp': otp_code  # Return OTP so user can still verify
-            }), 500
-
-        # Attempt to send email
-        email_sent, error_details = send_otp_email(receiver_email, otp_code)
-
-        if email_sent:
-            return jsonify({
-                'message': 'OTP sent successfully to your email'
-            }), 200
-        else:
-            # If email fails, return OTP so user can still verify
-            print(f"❌ Email sending failed for {receiver_email}. OTP: {otp_code}")
-
-            # Create detailed error message for debugging
-            error_message = 'Failed to send OTP email. '
-            if error_details:
-                error_message += f'Errors: {"; ".join(error_details[:3])}'  # Show first 3 errors
-
-            return jsonify({
-                'error': error_message,
-                'otp': otp_code,  # Return OTP for manual entry
-                'debug_info': {
-                    'sender_configured': bool(sender_email),
-                    'password_configured': bool(sender_password),
-                    'smtp_server': smtp_server,
-                    'on_render': bool(os.environ.get('RENDER'))
-                }
-            }), 500
-
-    except Exception as e:
-        print(f"💥 ERROR in send_otp route: {e}")
-        traceback.print_exc()
-        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
-
-
-@app.route('/verify-otp', methods=['POST'])
-def verify_otp():
-    try:
-        data = request.get_json()
-        email = data.get('email')
-        otp_code = data.get('otp_code')
         user_data = data.get('user_data')
 
-        if not email or not otp_code or not user_data:
-            return jsonify({'error': 'Missing email, OTP, or user data'}), 400
+        if not user_data:
+            return jsonify({'error': 'No user data provided'}), 400
 
-        # Comprehensive user data validation before OTP verification
+        # Comprehensive user data validation
         validation_errors = validate_user_data(user_data)
         if validation_errors:
             return jsonify({'error': ' | '.join(validation_errors)}), 400
 
-        # Find OTP in MongoDB
-        otp_doc = otps_collection.find_one({'email': email})
+        # Generate username from email
+        username = user_data['email'].split('@')[0]
 
-        if not otp_doc:
-            return jsonify({'error': 'OTP not found or expired'}), 400
-
-        stored_otp = otp_doc['otp']
-        expires_at = otp_doc['expires_at']
-
-        # Check expiry
-        if datetime.now() > expires_at:
-            otps_collection.delete_one({'email': email})
-            return jsonify({'error': 'OTP expired'}), 400
-
-        if otp_code != stored_otp:
-            return jsonify({'error': 'Invalid OTP'}), 400
-
-        # Generate username from email (remove @domain)
-        username = email.split('@')[0]
-
-        # Check if username already exists in users
-        existing_user = users_collection.find_one({'$or': [{'username': username}, {'email': email}]})
+        # Check if user already exists - Enhanced check with better error message
+        existing_user = users_collection.find_one({'email': user_data['email'].strip().lower()})
         if existing_user:
-            return jsonify({'error': 'Username or email already exists. Please use a different email.'}), 400
+            return jsonify({'error': 'This email is already registered. Please use a different email address or login with your existing account.'}), 400
+
+        # Also check if username already exists
+        existing_username = users_collection.find_one({'username': username})
+        if existing_username:
+            return jsonify({'error': 'Username already exists. Please try a different email address.'}), 400
 
         # Data sanitization before storing
         sanitized_user_data = {
@@ -599,7 +340,7 @@ def verify_otp():
             'phone': re.sub(r'\D', '', user_data['phone']),  # Clean phone number
             'password': user_data['password'],  # Store plaintext password
             'username': username,
-            'email': email.strip().lower(),
+            'email': user_data['email'].strip().lower(),
             'verified': True,
             'registration_date': datetime.now().isoformat()
         }
@@ -618,10 +359,7 @@ def verify_otp():
         }
         users_collection.insert_one(user_doc)
 
-        # Clean up OTP
-        otps_collection.delete_one({'email': email})
-
-        return jsonify({'message': 'Email verified successfully'}), 200
+        return jsonify({'message': 'Registration successful! You can now login.'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -673,61 +411,6 @@ def login():
 def logout():
     session.clear()
     return redirect(url_for('index'))
-
-
-@app.route('/fetch-otp', methods=['POST'])
-def fetch_otp():
-    data = request.json
-    target_email = data.get('email')
-
-    try:
-        # Connect to Gmail's IMAP server (for debugging/fetching sent OTP)
-        mail = imaplib.IMAP4_SSL("imap.gmail.com")
-        mail.login(sender_email, sender_password)
-        mail.select("inbox")
-
-        # Search for unread emails
-        status, response = mail.search(None, '(UNSEEN)')
-        unread_msg_nums = response[0].split()
-
-        otp = None
-
-        for e_id in reversed(unread_msg_nums):  # check latest first
-            # Fetch the email by ID
-            status, msg_data = mail.fetch(e_id, "(RFC822)")
-            for response_part in msg_data:
-                if isinstance(response_part, tuple):
-                    msg = email.message_from_bytes(response_part[1])
-                    subject = msg["subject"]
-                    from_ = msg["from"]
-
-                    # Check if email is from our system
-                    if "OTP" in subject or "verification" in subject.lower():
-                        # Get email body
-                        if msg.is_multipart():
-                            for part in msg.walk():
-                                content_type = part.get_content_type()
-                                content_dispo = str(part.get("Content-Disposition"))
-                                if content_type == "text/plain" and "attachment" not in content_dispo:
-                                    body = part.get_payload(decode=True).decode()
-                                    break
-                        else:
-                            body = msg.get_payload(decode=True).decode()
-
-                        # Try to extract OTP using regex (assuming 6-digit OTP)
-                        match = re.search(r'\b\d{6}\b', body)
-                        if match:
-                            otp = match.group()
-                            break
-            if otp:
-                break
-        if otp:
-            return jsonify({"success": True, "otp": otp})
-        else:
-            return jsonify({"success": False, "error": "No OTP found in unread emails."})
-
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
 
 
 @app.route('/save-bill-data', methods=['POST'])
@@ -934,113 +617,17 @@ def get_notifications():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/debug-email')
-def debug_email():
-    """Debug endpoint to check email configuration"""
-    debug_info = {
-        'sender_email': sender_email,
-        'smtp_server': smtp_server,
-        'smtp_port': smtp_port,
-        'demo_mode': demo_mode,
-        'has_sender_password': bool(sender_password and sender_password != 'onvrtvvwmvlzphth'),
-        'environment': os.environ.get('RENDER', 'Local development'),
-        'render': bool(os.environ.get('RENDER')),
-        'sender_password_length': len(sender_password) if sender_password else 0
-    }
-    return jsonify(debug_info)
-
-
-@app.route('/test-email', methods=['POST'])
-def test_email():
-    """Test email configuration"""
-    try:
-        data = request.get_json()
-        test_email = data.get('email')
-
-        if not test_email:
-            return jsonify({'error': 'Email required'}), 400
-
-        # Test email sending
-        success, error_details = send_otp_email(test_email, "123456")
-
-        return jsonify({
-            'success': success,
-            'demo_mode': demo_mode,
-            'sender_email_configured': bool(sender_email),
-            'sender_password_configured': bool(sender_password),
-            'error_details': error_details if not success else None,
-            'message': 'Test email sent' if success else 'Failed to send test email'
-        })
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/email-diagnostics')
-def email_diagnostics():
-    """Comprehensive email diagnostics endpoint"""
-    diagnostics = {
-        'email_config': {
-            'sender_email': sender_email,
-            'smtp_server': smtp_server,
-            'smtp_port': smtp_port,
-            'demo_mode': demo_mode,
-            'has_sender_password': bool(sender_password),
-            'sender_password_length': len(sender_password) if sender_password else 0
-        },
-        'environment': {
-            'on_render': bool(os.environ.get('RENDER')),
-            'python_version': os.environ.get('PYTHON_VERSION', 'Unknown'),
-            'render_service': os.environ.get('RENDER_SERVICE_NAME', 'Unknown')
-        },
-        'network_info': {
-            'timeout_support': 'Yes',
-            'outbound_ports': '587, 465, 25 (typically blocked on Render)'
-        },
-        'recommendations': [
-            'Use dedicated email service like SendGrid for Render deployment',
-            'Check if outbound SMTP is allowed on your Render plan',
-            'Verify Gmail App Password is correct',
-            'Try using different SMTP port'
-        ]
-    }
-    return jsonify(diagnostics)
-
-
 @app.route('/health')
 def health_check():
     """Health check endpoint for Render"""
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
-        'database': 'connected' if hasattr(db, 'command') else 'dummy',
-        'email_configured': bool(sender_email and sender_password),
-        'demo_mode': demo_mode,
-        'on_render': bool(os.environ.get('RENDER'))
+        'database': 'connected' if hasattr(db, 'command') else 'dummy'
     })
 
 
 if __name__ == '__main__':
-    # Check email configuration on startup
     print("=== Pharmacy Management System ===")
-    print("=== Email Configuration ===")
-    print(f"Sender Email: {sender_email}")
-    print(f"SMTP Server: {smtp_server}:{smtp_port}")
-    print(f"Demo Mode: {demo_mode}")
-    print(f"Environment: {'Render' if os.environ.get('RENDER') else 'Local'}")
-    print(f"Sender Password Length: {len(sender_password) if sender_password else 0}")
-
-    if demo_mode:
-        print("⚠️  RUNNING IN DEMO MODE - OTP emails will not be sent")
-    elif not sender_email or not sender_password:
-        print("⚠️  Email credentials not configured properly")
-    else:
-        print("✅ Email configuration loaded")
-
-    # Render-specific warnings
-    if os.environ.get('RENDER'):
-        print("🌐 Running on Render - SMTP ports 587/465 may be blocked")
-        print("💡 Recommendation: Use SendGrid or similar service for reliable email")
-
     print("=== Server Starting ===")
     app.run(debug=True, host='0.0.0.0', port=5000)
