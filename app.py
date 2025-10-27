@@ -45,7 +45,6 @@ except Exception as e:
     print(f"Could not connect to MongoDB: {e}")
     print("Using dummy database as fallback...")
 
-
     # Fallback - create a dummy client to prevent crashes
     class DummyDB:
         def __getitem__(self, name):
@@ -53,7 +52,6 @@ except Exception as e:
 
         def __getattr__(self, name):
             return DummyCollection()
-
 
     class DummyCollection:
         def __init__(self):
@@ -93,14 +91,12 @@ except Exception as e:
         def sort(self, *args, **kwargs):
             return self.data
 
-
     class DummyResult:
         def __init__(self, inserted_id=None, modified_count=0, deleted_count=0, inserted_ids=None):
             self.inserted_id = inserted_id
             self.modified_count = modified_count
             self.deleted_count = deleted_count
             self.inserted_ids = inserted_ids or []
-
 
     db = DummyDB()
 
@@ -121,7 +117,6 @@ else:
 
 BASE_PDF_DIR = os.path.join(os.path.dirname(__file__), 'shree_samarth_enterprises_bills')
 
-
 # Custom JSON encoder to handle ObjectId
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -129,9 +124,7 @@ class CustomJSONEncoder(json.JSONEncoder):
             return str(obj)
         return super().default(obj)
 
-
 app.json_encoder = CustomJSONEncoder
-
 
 # Function to sync default medicines with database
 def sync_default_medicines():
@@ -159,10 +152,8 @@ def sync_default_medicines():
     except Exception as e:
         print(f"Error syncing default medicines: {e}")
 
-
 # Call this function when the app starts
 sync_default_medicines()
-
 
 # Login required decorator
 def login_required(f):
@@ -171,9 +162,7 @@ def login_required(f):
         if 'user_id' not in session:
             return redirect(url_for('index'))
         return f(*args, **kwargs)
-
     return decorated_function
-
 
 # Validation functions
 def validate_email(email):
@@ -183,7 +172,6 @@ def validate_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email.strip()) is not None
 
-
 def validate_phone(phone):
     """Validate phone number (10 digits)"""
     if not phone or not isinstance(phone, str):
@@ -192,14 +180,12 @@ def validate_phone(phone):
     cleaned_phone = re.sub(r'\D', '', phone)
     return len(cleaned_phone) == 10
 
-
 def validate_name(name):
     """Validate name (letters and spaces only, 2-50 characters)"""
     if not name or not isinstance(name, str):
         return False
     name = name.strip()
     return re.match(r'^[a-zA-Z\s]{2,50}$', name) is not None
-
 
 def validate_age(age):
     """Validate age (15-80)"""
@@ -210,7 +196,6 @@ def validate_age(age):
         return 15 <= age_int <= 80
     except (ValueError, TypeError):
         return False
-
 
 def validate_password(password):
     """Validate password strength"""
@@ -227,7 +212,6 @@ def validate_password(password):
     if not re.search(r'[@$!%*?&]', password):
         return False, "Password must contain at least one special character (@$!%*?&)"
     return True, "Password is strong"
-
 
 def validate_user_data(user_data):
     """Comprehensive user data validation"""
@@ -264,29 +248,24 @@ def validate_user_data(user_data):
 
     return errors
 
-
 @app.route('/')
 def index():
     return render_template('index.html')
-
 
 @app.route('/billing')
 @login_required
 def billing():
     return render_template('billing.html')
 
-
 @app.route('/reports')
 @login_required
 def reports():
     return render_template('reports.html')
 
-
 @app.route('/profit')
 @login_required
 def profit():
     return render_template('profit.html')
-
 
 @app.route('/report/<invoice_no>')
 @login_required
@@ -296,14 +275,12 @@ def report(invoice_no):
         return render_template('report_details.html', bill=bill)
     return 'Bill not found', 404
 
-
 @app.route('/invoice_pdf')
 @login_required
 def invoice_pdf():
     # Get bill data from session or request args
     bill_data = session.get('bill_data', {})
     return render_template('invoice_pdf.html', bill_data=bill_data)
-
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -363,7 +340,6 @@ def register():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/login', methods=['POST'])
 def login():
     try:
@@ -406,12 +382,10 @@ def login():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('index'))
-
 
 @app.route('/save-bill-data', methods=['POST'])
 @login_required
@@ -422,7 +396,6 @@ def save_bill_data():
         return jsonify({'message': 'Bill data saved successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/api/save_bill', methods=['POST'])
 @login_required
@@ -442,7 +415,6 @@ def save_bill():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/api/bills', methods=['GET'])
 @login_required
 def get_bills():
@@ -452,7 +424,6 @@ def get_bills():
     except Exception as e:
         print(f"Error fetching bills: {e}")
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/api/bill/<invoice_no>', methods=['GET'])
 @login_required
@@ -464,7 +435,6 @@ def get_bill(invoice_no):
         return jsonify({'error': 'Bill not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/save_invoice_pdf', methods=['POST'])
 @login_required
@@ -495,7 +465,6 @@ def save_invoice_pdf():
     except Exception as e:
         return jsonify({'error': f'Failed to save PDF: {str(e)}'}), 500
 
-
 # Medicine data endpoints
 @app.route('/api/medicines', methods=['GET'])
 @login_required
@@ -524,7 +493,6 @@ def get_medicines():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/api/medicines', methods=['POST'])
 @login_required
 def save_medicine():
@@ -547,7 +515,6 @@ def save_medicine():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/api/medicines/<name>', methods=['DELETE'])
 @login_required
 def delete_medicine(name):
@@ -559,7 +526,6 @@ def delete_medicine(name):
             return jsonify({'error': 'Medicine not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/api/notifications', methods=['GET'])
 @login_required
@@ -616,7 +582,6 @@ def get_notifications():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/health')
 def health_check():
     """Health check endpoint for Render"""
@@ -625,7 +590,6 @@ def health_check():
         'timestamp': datetime.now().isoformat(),
         'database': 'connected' if hasattr(db, 'command') else 'dummy'
     })
-
 
 if __name__ == '__main__':
     print("=== Pharmacy Management System ===")

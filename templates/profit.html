@@ -330,6 +330,13 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.95);
             backdrop-filter: blur(10px);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .profit-modal.show {
+            display: flex;
+            opacity: 1;
         }
 
         .profit-modal-content {
@@ -342,8 +349,12 @@
             flex-direction: column;
             overflow-y: auto;
             box-shadow: none;
-            animation: slideInFull 0.4s ease;
-            position: relative;
+            transform: scale(0.9);
+            transition: transform 0.4s ease;
+        }
+
+        .profit-modal.show .profit-modal-content {
+            transform: scale(1);
         }
 
         .modal-header {
@@ -394,6 +405,14 @@
             text-align: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             transition: var(--transition);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+
+        .stat-box.animate {
+            transform: translateY(0);
+            opacity: 1;
         }
 
         .stat-box:hover {
@@ -426,6 +445,14 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             position: relative;
             overflow: hidden;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+
+        .chart-wrapper.animate {
+            transform: translateY(0);
+            opacity: 1;
         }
 
         .chart-wrapper::before {
@@ -457,6 +484,14 @@
             border-radius: var(--border-radius);
             overflow: hidden;
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+
+        .details-table.animate {
+            transform: translateY(0);
+            opacity: 1;
         }
 
         .details-table table {
@@ -470,6 +505,31 @@
 
         .details-table td {
             padding: 12px;
+        }
+
+        /* Loading Indicator */
+        .loading-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: var(--primary);
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--primary-light);
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* Stats Modal */
@@ -741,74 +801,83 @@
                 <span class="close-full" onclick="closeProfitModal()">&times;</span>
             </div>
             <div class="modal-body">
-                <div class="summary-stats">
-                    <div class="stat-box">
-                        <div class="stat-value" id="totalProfit">₹0</div>
-                        <div class="stat-label">Total Profit</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="totalDiscount">₹0</div>
-                        <div class="stat-label">Total Discount</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="totalItems">0</div>
-                        <div class="stat-label">Total Items</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="profitMargin">0%</div>
-                        <div class="stat-label">Profit Margin</div>
-                    </div>
+                <!-- Loading Indicator -->
+                <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <p>Loading profit analysis...</p>
                 </div>
 
-                <div class="charts-container">
-                    <div class="chart-wrapper">
-                        <h3>Profit Distribution</h3>
-                        <div class="chart-container">
-                            <canvas id="profitChart"></canvas>
+                <!-- Content that appears after loading -->
+                <div id="profitContent">
+                    <div class="summary-stats">
+                        <div class="stat-box">
+                            <div class="stat-value" id="totalProfit">₹0</div>
+                            <div class="stat-label">Total Profit</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="totalDiscount">₹0</div>
+                            <div class="stat-label">Total Discount</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="totalItems">0</div>
+                            <div class="stat-label">Total Items</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="profitMargin">0%</div>
+                            <div class="stat-label">Profit Margin</div>
                         </div>
                     </div>
-                    <div class="chart-wrapper">
-                        <h3>Revenue vs Cost</h3>
-                        <div class="chart-container">
-                            <canvas id="revenueChart"></canvas>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="charts-container">
-                    <div class="chart-wrapper">
-                        <h3>Profit Trend Analysis</h3>
-                        <div class="chart-container">
-                            <canvas id="trendChart"></canvas>
+                    <div class="charts-container">
+                        <div class="chart-wrapper">
+                            <h3>Profit Distribution</h3>
+                            <div class="chart-container">
+                                <canvas id="profitChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper">
+                            <h3>Revenue vs Cost</h3>
+                            <div class="chart-container">
+                                <canvas id="revenueChart"></canvas>
+                            </div>
                         </div>
                     </div>
-                    <div class="chart-wrapper">
-                        <h3>Profitability Heat Map</h3>
-                        <div class="chart-container">
-                            <canvas id="heatmapChart"></canvas>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="details-table">
-                    <h3 style="padding: 20px; background: var(--primary-light); margin: 0; color: var(--primary);">Detailed Breakdown</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Product Name</th>
-                                <th>Qty</th>
-                                <th>Pack</th>
-                                <th>MRP</th>
-                                <th>Rate</th>
-                                <th>Amount</th>
-                                <th>Discount</th>
-                                <th>Profit</th>
-                            </tr>
-                        </thead>
-                        <tbody id="profitTableBody">
-                            <!-- Profit details will be populated here -->
-                        </tbody>
-                    </table>
+                    <div class="charts-container">
+                        <div class="chart-wrapper">
+                            <h3>Profit Trend Analysis</h3>
+                            <div class="chart-container">
+                                <canvas id="trendChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper">
+                            <h3>Profitability Heat Map</h3>
+                            <div class="chart-container">
+                                <canvas id="heatmapChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="details-table">
+                        <h3 style="padding: 20px; background: var(--primary-light); margin: 0; color: var(--primary);">Detailed Breakdown</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Product Name</th>
+                                    <th>Qty</th>
+                                    <th>Pack</th>
+                                    <th>MRP</th>
+                                    <th>Rate</th>
+                                    <th>Amount</th>
+                                    <th>Discount</th>
+                                    <th>Profit</th>
+                                </tr>
+                            </thead>
+                            <tbody id="profitTableBody">
+                                <!-- Profit details will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -854,6 +923,7 @@
         let trendChart = null;
         let heatmapChart = null;
         let currentSort = 'date-desc';
+        let currentInvoice = null;
 
         // Initialize the profit page
         async function initializeApp() {
@@ -1006,15 +1076,44 @@
 
         // Show full screen profit modal
         async function showProfitModal(invoice_no) {
+            currentInvoice = invoice_no;
+
+            // Show modal with animation
+            const modal = document.getElementById('profitModal');
+            modal.classList.add('show');
+
+            // Show loading indicator
+            document.getElementById('loadingIndicator').style.display = 'flex';
+            document.getElementById('profitContent').style.display = 'none';
+
+            // Set invoice title
+            document.getElementById('invoiceTitle').textContent = invoice_no;
+
+            // Load data asynchronously
+            try {
+                await loadProfitData(invoice_no);
+
+                // Hide loading indicator
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('profitContent').style.display = 'block';
+
+                // Animate elements with delay
+                animateElements();
+            } catch (error) {
+                console.error('Error loading profit data:', error);
+                alert('Failed to load profit analysis. Please try again.');
+                closeProfitModal();
+            }
+        }
+
+        // Load profit data asynchronously
+        async function loadProfitData(invoice_no) {
             try {
                 const response = await fetch(`/api/bill/${invoice_no}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch bill details');
                 }
                 const bill = await response.json();
-
-                // Set invoice title
-                document.getElementById('invoiceTitle').textContent = invoice_no;
 
                 // Calculate totals
                 let totalProfit = 0;
@@ -1026,6 +1125,9 @@
                 const profitData = [];
                 const revenueData = [];
                 const productNames = [];
+
+                // Clear existing table rows
+                document.getElementById('profitTableBody').innerHTML = '';
 
                 bill.items.forEach(item => {
                     const full_amount = item.quantity * item.mrp;
@@ -1073,13 +1175,35 @@
                 createRevenueChart(revenueData, productNames);
                 createTrendChart(profitData, productNames);
                 createHeatmapChart(profitData, productNames);
-
-                document.getElementById('profitModal').style.display = 'block';
-                document.body.style.overflow = 'hidden'; // Prevent background scrolling
             } catch (error) {
-                console.error('Error fetching bill details:', error);
-                alert('Failed to load bill details. Please try again.');
+                throw error;
             }
+        }
+
+        // Animate elements with staggered delay
+        function animateElements() {
+            const statBoxes = document.querySelectorAll('.stat-box');
+            const chartWrappers = document.querySelectorAll('.chart-wrapper');
+            const detailsTable = document.querySelector('.details-table');
+
+            // Animate stat boxes
+            statBoxes.forEach((box, index) => {
+                setTimeout(() => {
+                    box.classList.add('animate');
+                }, 100 * index);
+            });
+
+            // Animate chart wrappers
+            chartWrappers.forEach((wrapper, index) => {
+                setTimeout(() => {
+                    wrapper.classList.add('animate');
+                }, 300 + (100 * index));
+            });
+
+            // Animate details table
+            setTimeout(() => {
+                detailsTable.classList.add('animate');
+            }, 700);
         }
 
         // Create profit distribution chart
@@ -1403,8 +1527,15 @@
 
         // Close profit modal
         function closeProfitModal() {
-            document.getElementById('profitModal').style.display = 'none';
-            document.body.style.overflow = 'auto'; // Restore scrolling
+            const modal = document.getElementById('profitModal');
+            modal.classList.remove('show');
+
+            // Reset animations
+            const animatedElements = document.querySelectorAll('.stat-box, .chart-wrapper, .details-table');
+            animatedElements.forEach(el => {
+                el.classList.remove('animate');
+            });
+
             // Clear table
             document.getElementById('profitTableBody').innerHTML = '';
             // Destroy charts
@@ -1424,6 +1555,10 @@
                 heatmapChart.destroy();
                 heatmapChart = null;
             }
+
+            // Hide loading indicator if it's showing
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('profitContent').style.display = 'block';
         }
 
         // Menu selection function
