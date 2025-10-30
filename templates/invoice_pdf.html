@@ -287,8 +287,8 @@
             text-align: center;
             border: 1px solid #e0e0e0;
             font-size: 16px;
-            min-height: 24px; /* Matches the approximate height of product rows */
-            line-height: 22px; /* Ensures consistent height */
+            min-height: 24px;
+            line-height: 22px;
         }
 
         #bill-preview th {
@@ -328,6 +328,7 @@
             display: flex;
             justify-content: flex-end;
             margin: 10px 0;
+            padding: 0 10px;
         }
 
         #bill-preview .signature-box {
@@ -448,27 +449,117 @@
             transform: translateX(26px);
         }
 
-        @media (max-width: 600px) {
+        /* Improved responsive design */
+        @media (max-width: 900px) {
             .content-row {
                 flex-direction: column;
             }
 
-            .bill-details {
-                flex-direction: column;
+            .edit-frame {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-title {
+                font-size: 32px;
             }
 
-            .contact-info {
+            #bill-preview .company-name {
+                font-size: 32px;
+            }
+
+            #bill-preview .contact-info {
                 flex-direction: column;
                 gap: 10px;
             }
 
-            .signature-area {
+            #bill-preview .bill-details {
                 flex-direction: column;
-                gap: 20px;
+            }
+
+            #bill-preview table {
+                font-size: 14px;
+            }
+
+            #bill-preview th, #bill-preview td {
+                padding: 4px 3px;
+                font-size: 14px;
+            }
+
+            #bill-preview .signature-area {
+                justify-content: center;
+            }
+
+            #bill-preview .signature-box {
+                flex: 0 0 60%;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                gap: 15px;
+            }
+
+            header {
+                padding: 15px;
+            }
+
+            .app-title {
+                font-size: 28px;
+            }
+
+            .section-title {
+                font-size: 24px;
+            }
+
+            .preview-section {
+                padding: 15px;
+            }
+
+            #bill-preview .company-name {
+                font-size: 28px;
+            }
+
+            #bill-preview .signature-area {
+                justify-content: center;
+            }
+
+            #bill-preview .signature-box {
+                flex: 0 0 80%;
             }
 
             .action-buttons {
                 flex-direction: column;
+                gap: 10px;
+            }
+
+            button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #bill-preview .company-name {
+                font-size: 24px;
+            }
+
+            #bill-preview .signature-box {
+                flex: 0 0 100%;
+            }
+
+            #bill-preview table {
+                font-size: 12px;
+            }
+
+            #bill-preview th, #bill-preview td {
+                padding: 3px 2px;
+                font-size: 12px;
             }
         }
     </style>
