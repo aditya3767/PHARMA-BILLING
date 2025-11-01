@@ -4,8 +4,8 @@ default_medicines_data = [
         'name': 'DHATRI LAUHA',
         'category': 'gm/Kg',
         'variants': [
-            {'size': '15gm', 'price': 100, 'stock': 20, 'expiry': '2025-09-16'},
-            {'size': '50gm', 'price': 230, 'stock': 20, 'expiry': '2025-12-20'},
+            {'size': '15gm', 'price': 100, 'stock': 20, 'expiry': ''},
+            {'size': '50gm', 'price': 230, 'stock': 20, 'expiry': ''},
             {'size': '250gm', 'price': 900, 'stock': 20, 'expiry': ''},
             {'size': '1Kg', 'price': 3300, 'stock': 20, 'expiry': ''}
         ]
@@ -24,7 +24,7 @@ default_medicines_data = [
         'name': 'BRAHMA RASAYANA',
         'category': 'gm/Kg',
         'variants': [
-            {'size': '150gm', 'price': 185, 'stock': 20, 'expiry': '2025-09-05'},
+            {'size': '150gm', 'price': 185, 'stock': 20, 'expiry': ''},
             {'size': '250gm', 'price': 270, 'stock': 20, 'expiry': ''}
         ]
     },
@@ -32,7 +32,7 @@ default_medicines_data = [
         'name': 'MUSLI SYP',
         'category': 'ml/Ltr',
         'variants': [
-            {'size': '200ml', 'price': 180, 'stock': 20, 'expiry': '2025-11-11'},
+            {'size': '200ml', 'price': 180, 'stock': 20, 'expiry': ''},
             {'size': '450ml', 'price': 310, 'stock': 20, 'expiry': ''},
             {'size': '5Ltr', 'price': 3100, 'stock': 20, 'expiry': ''}
         ]
