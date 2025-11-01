@@ -328,30 +328,40 @@
             display: flex;
             justify-content: flex-end;
             margin: 10px 0;
+            padding-left: 150px;
         }
 
         #bill-preview .signature-box {
-            flex: 0 0 40%;
+            flex: 0 0 60%;
             text-align: center;
             padding: 5px;
+            min-width: 250px;
+        }
+
+        #bill-preview .signature-box p {
+            white-space: nowrap;
+            margin-top: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
         }
 
         #bill-preview .signature-line {
-            width: 70%;
+            width: 80%;
             height: 1px;
             background: #ccc;
-            margin: -3px auto 3px;
+            margin: 0 auto 3px;
             position: relative;
         }
 
         #bill-preview .signature-line::after {
             content: "Auth Signatory";
             position: absolute;
-            top: -10px;
+            top: -12px;
             left: 50%;
             transform: translateX(-50%);
             background: white;
-            padding: 0 10px;
+            padding: 2px 8px;
             color: #777;
             font-size: 12px;
         }
@@ -465,6 +475,12 @@
             .signature-area {
                 flex-direction: column;
                 gap: 20px;
+                padding-right: 0;
+            }
+
+            .signature-box {
+                flex: 0 0 auto;
+                min-width: 200px;
             }
 
             .action-buttons {

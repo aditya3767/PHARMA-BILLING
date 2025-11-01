@@ -362,6 +362,30 @@
             display: flex;
             flex-direction: column;
             transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--primary);
+        }
+
+        .summary-card:nth-child(2)::before {
+            background: var(--success);
+        }
+
+        .summary-card:nth-child(3)::before {
+            background: var(--info);
+        }
+
+        .summary-card:nth-child(4)::before {
+            background: var(--secondary);
         }
 
         .summary-card:hover {
@@ -380,6 +404,18 @@
             font-size: 28px;
             font-weight: 800;
             color: var(--primary);
+        }
+
+        .summary-card:nth-child(2) .summary-card-value {
+            color: var(--success);
+        }
+
+        .summary-card:nth-child(3) .summary-card-value {
+            color: var(--info);
+        }
+
+        .summary-card:nth-child(4) .summary-card-value {
+            color: var(--secondary);
         }
 
         .summary-card-icon {
@@ -437,28 +473,30 @@
             background-color: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(5px);
             overflow-y: auto;
+            animation: fadeIn 0.3s ease;
         }
 
         .bill-modal-content {
             background-color: var(--white);
             margin: 5% auto;
-            padding: 30px;
+            padding: 0;
             border-radius: var(--border-radius);
             width: 95%;
-            max-width: 1400px;
+            max-width: 1000px;
             box-shadow: var(--box-shadow);
             animation: slideIn 0.3s ease;
             position: relative;
+            overflow: hidden;
         }
 
         .close-modal {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 28px;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
             font-weight: bold;
             cursor: pointer;
-            color: var(--gray);
+            color: var(--white);
             transition: var(--transition);
             width: 40px;
             height: 40px;
@@ -466,73 +504,102 @@
             align-items: center;
             justify-content: center;
             border-radius: 50%;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .close-modal:hover {
-            background-color: var(--light-gray);
-            color: var(--dark);
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
         }
 
         .bill-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--white);
+            padding: 30px;
             display: flex;
             justify-content: space-between;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--light-gray);
-        }
-
-        .bill-info {
-            flex: 1;
+            align-items: flex-start;
+            position: relative;
         }
 
         .bill-info h2 {
-            color: var(--primary);
-            margin-bottom: 10px;
+            font-size: 24px;
+            margin-bottom: 15px;
+            font-weight: 700;
         }
 
         .bill-info p {
-            color: var(--gray);
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .bill-info strong {
+            font-weight: 600;
         }
 
         .bill-summary {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
+            text-align: right;
         }
 
         .bill-total {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 800;
-            color: var(--primary);
             margin-bottom: 10px;
         }
 
-        .bill-status {
-            background: var(--success);
-            color: var(--white);
-            padding: 5px 15px;
-            border-radius: 50px;
-            font-size: 14px;
-            font-weight: 600;
+        .bill-details {
+            padding: 30px;
         }
 
         .bill-items-table {
             width: 100%;
             margin-top: 20px;
+            border-collapse: collapse;
         }
 
         .bill-items-table th {
             background-color: var(--primary-light);
-            padding: 12px 16px;
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
         }
 
         .bill-items-table td {
             padding: 12px 16px;
+            border-bottom: 1px solid var(--light-gray);
         }
 
-        /* Print Button */
-        .print-btn {
+        .bill-items-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .bill-items-table tr:hover {
+            background-color: rgba(26, 115, 232, 0.05);
+        }
+
+        .bill-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--light-gray);
+        }
+
+        .bill-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .print-btn, .download-btn {
             background: var(--primary);
             color: var(--white);
             border: none;
@@ -544,12 +611,19 @@
             align-items: center;
             gap: 8px;
             transition: var(--transition);
-            margin-top: 20px;
         }
 
-        .print-btn:hover {
+        .print-btn:hover, .download-btn:hover {
             background: var(--primary-dark);
             transform: translateY(-2px);
+        }
+
+        .download-btn {
+            background: var(--success);
+        }
+
+        .download-btn:hover {
+            background: #0d8c4d;
         }
 
         /* Custom Scrollbar Styles */
@@ -689,7 +763,14 @@
             }
             .bill-modal-content {
                 width: 95%;
-                padding: 20px;
+                padding: 0;
+            }
+            .bill-header {
+                flex-direction: column;
+                gap: 20px;
+            }
+            .bill-summary {
+                align-items: flex-start;
             }
         }
 
@@ -717,12 +798,17 @@
             .summary-cards {
                 grid-template-columns: 1fr;
             }
-            .bill-header {
+            .bill-details {
+                padding: 20px;
+            }
+            .bill-footer {
                 flex-direction: column;
                 gap: 20px;
-            }
-            .bill-summary {
                 align-items: flex-start;
+            }
+            .bill-actions {
+                width: 100%;
+                justify-content: space-between;
             }
         }
     </style>
@@ -856,8 +942,8 @@
     <!-- Bill Details Modal -->
     <div id="billModal" class="bill-modal">
         <div class="bill-modal-content">
-            <span class="close-modal" onclick="closeBillModal()">&times;</span>
             <div class="bill-header">
+                <span class="close-modal" onclick="closeBillModal()">&times;</span>
                 <div class="bill-info">
                     <h2>Bill Details</h2>
                     <p><strong>Invoice No:</strong> <span id="modalInvoiceNo"></span></p>
@@ -866,29 +952,30 @@
                 </div>
                 <div class="bill-summary">
                     <div class="bill-total" id="modalTotal">₹0.00</div>
-                    <div class="bill-status">Paid</div>
                 </div>
             </div>
-            <table class="bill-items-table">
-                <thead>
-                    <tr>
-                        <th>MFG</th>
-                        <th>Product Name</th>
-                        <th>Qty</th>
-                        <th>Fr/Sch</th>
-                        <th>Pack</th>
-                        <th>Batch No.</th>
-                        <th>Exp</th>
-                        <th>MRP</th>
-                        <th>Rate</th>
-                        <th>Dis%</th>
-                        <th>Amount</th>
-                    </tr>
-                </thead>
-                <tbody id="modalDetailsBody">
-                    <!-- Details will be populated here -->
-                </tbody>
-            </table>
+            <div class="bill-details">
+                <table class="bill-items-table">
+                    <thead>
+                        <tr>
+                            <th>MFG</th>
+                            <th>Product Name</th>
+                            <th>Qty</th>
+                            <th>Fr/Sch</th>
+                            <th>Pack</th>
+                            <th>Batch No.</th>
+                            <th>Exp</th>
+                            <th>MRP</th>
+                            <th>Rate</th>
+                            <th>Dis%</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modalDetailsBody">
+                        <!-- Details will be populated here -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -1030,7 +1117,7 @@
             filteredBills.forEach(bill => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td><a href="#" onclick="showBillDetails(${bill.invoice_no}); return false;">${bill.invoice_no}</a></td>
+                    <td><a href="#" onclick="showBillDetails(${bill.invoice_no}); return false;" style="color: var(--primary); text-decoration: none; font-weight: 600;">${bill.invoice_no}</a></td>
                     <td>${bill.date}</td>
                     <td>${bill.customer_name}</td>
                     <td>₹${bill.total_amount.toFixed(2)}</td>
