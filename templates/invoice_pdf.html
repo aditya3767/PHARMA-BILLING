@@ -69,7 +69,7 @@
 
         .app-title {
             font-family: 'Cinzel', serif;
-            font-size: 38px;
+            font-size: 50px;
             margin-bottom: 15px;
             font-weight: 700;
             letter-spacing: 2px;
@@ -209,6 +209,7 @@
             overflow: auto;
             box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
             position: relative;
+            min-height: 800px; /* Ensure consistent height for PDF capture */
         }
 
         #bill-preview .company-header {
@@ -221,7 +222,7 @@
 
         #bill-preview .company-name {
             font-family: 'Cinzel', serif;
-            font-size: 40px;
+            font-size: 45px;
             font-weight: 700;
             color: var(--primary);
             margin-bottom: -17px;
@@ -233,7 +234,7 @@
         }
 
         #bill-preview .company-address {
-            font-size: 16px;
+            font-size: 17px;
             color: #666;
             margin-bottom: 0px;
         }
@@ -243,7 +244,7 @@
             justify-content: space-between;
             align-items: center;
             margin-top: 10px;
-            font-size: 16px;
+            font-size: 17px;
             color: var(--secondary);
             font-weight: 500;
         }
@@ -286,7 +287,7 @@
             padding: 4px 6px;
             text-align: center;
             border: 1px solid #e0e0e0;
-            font-size: 16px;
+            font-size: 19px;
             min-height: 24px; /* Matches the approximate height of product rows */
             line-height: 22px; /* Ensures consistent height */
         }
@@ -391,6 +392,30 @@
             text-align: center;
         }
 
+        .software-mark {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            font-size: 13px;
+            color: #888;
+            font-style: italic;
+            font-family: 'Montserrat', sans-serif;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .software-mark i {
+            color: var(--secondary);
+            font-size: 13px;
+        }
+
         .action-buttons {
             display: flex;
             justify-content: center;
@@ -485,6 +510,12 @@
 
             .action-buttons {
                 flex-direction: column;
+            }
+
+            .software-mark {
+                font-size: 11px;
+                left: 10px;
+                bottom: 10px;
             }
         }
     </style>
@@ -833,6 +864,11 @@
                         <div class="signature-line"></div>
                         <p>FOR SHREE SAMARTH ENTERPRISES</p>
                     </div>
+                </div>
+
+                <div class="software-mark">
+                    <i class="fas fa-code"></i>
+                    Software by Aditya Bhoir | 9225525242
                 </div>
             `;
         }

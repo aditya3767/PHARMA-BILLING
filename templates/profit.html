@@ -593,6 +593,7 @@
             .container {
                 flex-direction: column;
             }
+
             .sidebar {
                 width: 100%;
                 height: auto;
@@ -601,30 +602,37 @@
                 z-index: 1000;
                 padding: 10px 0;
             }
+
             .logo {
                 display: none;
             }
+
             .menu-items {
                 display: flex;
                 overflow-x: auto;
             }
+
             .menu-item {
                 flex-direction: column;
                 padding: 12px;
                 margin: 4px;
                 min-width: 80px;
             }
+
             .menu-item i {
                 margin-right: 0;
                 margin-bottom: 5px;
                 font-size: 20px;
             }
+
             .menu-item span {
                 font-size: 12px;
             }
+
             .main-content {
                 margin-bottom: 80px;
             }
+
             .charts-container {
                 grid-template-columns: 1fr;
             }
@@ -637,15 +645,19 @@
                 padding: 15px;
                 gap: 15px;
             }
+
             .search-container {
                 width: 100%;
             }
+
             .user-info {
                 margin-left: 0;
             }
+
             .modal-body {
                 padding: 15px;
             }
+
             .summary-stats {
                 grid-template-columns: 1fr;
             }
@@ -1061,6 +1073,7 @@
                                     <th>Amount</th>
                                     <th>Discount</th>
                                     <th>Profit</th>
+                                    <th>Margin %</th>
                                 </tr>
                             </thead>
                             <tbody id="profitTableBody">
@@ -1191,20 +1204,25 @@
         function calculateBillProfit(invoice_no, bill) {
             let totalProfit = 0;
             let totalRevenue = 0;
+            let totalFullMRP = 0; // NEW: For MRP-based margin
 
             if (bill && bill.items) {
                 bill.items.forEach(item => {
-                    const full_amount = item.quantity * item.mrp;
+                    const mrp = item.mrp || item.price || 0;
+                    const full_mrp_amount = mrp * item.quantity; // NEW: Full MRP for margin calc
                     const selling_amount = item.amount || (item.quantity * item.rate);
-                    const cost = item.mrp * 0.3; // Applied formula: cost = MRP * (1 - 0.7) = MRP * 0.3
+                    const cost = mrp * 0.3; // Applied formula: cost = MRP * (1 - 0.7) = MRP * 0.3
                     const profit = selling_amount - (cost * item.quantity);
 
                     totalProfit += profit;
                     totalRevenue += selling_amount;
+                    totalFullMRP += full_mrp_amount; // NEW: Accumulate for overall margin
+
                 });
             }
 
             billProfits[invoice_no] = totalProfit;
+            billDetails[invoice_no].totalFullMRP = totalFullMRP; // NEW: Store for later use
             return totalProfit;
         }
 
@@ -1231,8 +1249,16 @@
             document.getElementById('overallTotalAmount').textContent = `₹${overallTotalAmount.toFixed(2)}`;
             document.getElementById('overallTotalProfit').textContent = `₹${overallTotalProfit.toFixed(2)}`;
 
-            // Calculate and display profit percentage
-            const profitPercentage = overallTotalAmount > 0 ? ((overallTotalProfit / overallTotalAmount) * 100).toFixed(1) : 0;
+            // NEW: Calculate overall MRP-based margin (sum profits / sum full MRPs across all bills)
+            let grandTotalFullMRP = 0;
+            bills.forEach(bill => {
+                const billDetail = billDetails[bill.invoice_no];
+                if (billDetail && billDetail.totalFullMRP) {
+                    grandTotalFullMRP += billDetail.totalFullMRP; // Use stored value
+                }
+            });
+            const profitPercentage = grandTotalFullMRP > 0 ? ((overallTotalProfit / grandTotalFullMRP) * 100).toFixed(1) : 0; // NEW: MRP-based (50%)
+
             const profitIndicator = document.getElementById('profitIndicator');
             const profitPercentageSpan = document.getElementById('profitPercentage');
 
@@ -1326,7 +1352,14 @@
 
             filteredBills.forEach(bill => {
                 const profit = billProfits[bill.invoice_no] || 0;
-                const profitPercentage = bill.total_amount > 0 ? ((profit / bill.total_amount) * 100).toFixed(1) : 0;
+                const billDetail = billDetails[bill.invoice_no];
+                let totalFullMRPForBill = 0;
+                if (billDetail && billDetail.items) {
+                    billDetail.items.forEach(item => {
+                        totalFullMRPForBill += (item.mrp || 0) * item.quantity;
+                    });
+                }
+                const profitPercentage = totalFullMRPForBill > 0 ? ((profit / totalFullMRPForBill) * 100).toFixed(1) : 0; // NEW: MRP-based (50%)
 
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -1462,6 +1495,7 @@
                 let totalItems = 0;
                 let totalRevenue = 0;
                 let totalCost = 0;
+                let totalFullMRP = 0; // NEW: For overall MRP-based margin
 
                 const profitData = [];
                 const revenueData = [];
@@ -1472,17 +1506,21 @@
 
                 if (bill && bill.items) {
                     bill.items.forEach(item => {
-                        const full_amount = item.quantity * item.mrp;
+                        const mrp = item.mrp || item.price || 0;
+                        const full_mrp_amount = mrp * item.quantity; // NEW: Full MRP for margin calc
+                        const full_amount = full_mrp_amount;
                         const selling_amount = item.amount || (item.quantity * item.rate);
                         const discount = full_amount - selling_amount;
-                        const cost = item.mrp * 0.3; // Applied formula: cost = MRP * (1 - 0.7) = MRP * 0.3
+                        const cost = mrp * 0.3; // Applied formula: cost = MRP * (1 - 0.7) = MRP * 0.3
                         const profit = selling_amount - (cost * item.quantity);
+                        const marginOnMRP = full_mrp_amount > 0 ? (profit / full_mrp_amount * 100).toFixed(1) : 0; // NEW: MRP-based margin per item
 
                         totalProfit += profit;
                         totalDiscount += discount;
                         totalItems += item.quantity;
                         totalRevenue += selling_amount;
                         totalCost += (cost * item.quantity);
+                        totalFullMRP += full_mrp_amount; // NEW: Accumulate for overall
 
                         profitData.push(profit);
                         revenueData.push({
@@ -1496,11 +1534,12 @@
                             <td>${item.name}</td>
                             <td>${item.quantity}</td>
                             <td>${item.size}</td>
-                            <td>₹${item.mrp.toFixed(2)}</td>
-                            <td>₹${item.rate.toFixed(2)}</td>
+                            <td>₹${mrp.toFixed(2)}</td>
+                            <td>₹${(item.rate || 0).toFixed(2)}</td>
                             <td>₹${selling_amount.toFixed(2)}</td>
                             <td>₹${discount.toFixed(2)}</td>
                             <td style="color: ${profit >= 0 ? 'var(--success)' : 'var(--danger)'}">₹${profit.toFixed(2)}</td>
+                            <td style="color: ${marginOnMRP >= 50 ? 'var(--success)' : 'var(--warning)'}">${marginOnMRP}%</td> <!-- NEW: Margin % on MRP -->
                         `;
                         document.getElementById('profitTableBody').appendChild(row);
                     });
@@ -1510,11 +1549,12 @@
                 document.getElementById('totalProfit').textContent = `₹${totalProfit.toFixed(2)}`;
                 document.getElementById('totalDiscount').textContent = `₹${totalDiscount.toFixed(2)}`;
                 document.getElementById('totalItems').textContent = totalItems;
-                const profitMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : 0;
+                const profitMargin = totalFullMRP > 0 ? ((totalProfit / totalFullMRP) * 100).toFixed(1) : 0; // NEW: MRP-based (50%)
                 document.getElementById('profitMargin').textContent = `${profitMargin}%`;
 
                 // Update overall profit for this bill
                 billProfits[invoice_no] = totalProfit;
+                billDetails[invoice_no].totalFullMRP = totalFullMRP; // NEW: Store for overall use
 
                 // Recalculate overall totals
                 calculateOverallTotals();
