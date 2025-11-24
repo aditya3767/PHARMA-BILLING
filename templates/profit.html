@@ -1067,6 +1067,7 @@
                                 <tr>
                                     <th>Product Name</th>
                                     <th>Qty</th>
+                                    <th>Scheme</th>
                                     <th>Pack</th>
                                     <th>MRP</th>
                                     <th>Rate</th>
@@ -1200,29 +1201,36 @@
             }
         }
 
-        // Calculate profit for a specific bill
+        // Calculate profit for a specific bill - KEEPING YOUR ORIGINAL FORMULA BUT ADDING SCHEME
         function calculateBillProfit(invoice_no, bill) {
             let totalProfit = 0;
             let totalRevenue = 0;
-            let totalFullMRP = 0; // NEW: For MRP-based margin
+            let totalFullMRP = 0; // For MRP-based margin
 
             if (bill && bill.items) {
                 bill.items.forEach(item => {
                     const mrp = item.mrp || item.price || 0;
-                    const full_mrp_amount = mrp * item.quantity; // NEW: Full MRP for margin calc
+                    const full_mrp_amount = mrp * item.quantity; // Full MRP for margin calc
                     const selling_amount = item.amount || (item.quantity * item.rate);
-                    const cost = mrp * 0.3; // Applied formula: cost = MRP * (1 - 0.7) = MRP * 0.3
-                    const profit = selling_amount - (cost * item.quantity);
+
+                    // Get scheme quantity (free items)
+                    const scheme = parseFloat(item.scheme) || 0;
+
+                    // Calculate total units (sold + free)
+                    const total_units = item.quantity + scheme;
+
+                    // KEEPING YOUR ORIGINAL FORMULA: cost = MRP * 0.3
+                    const cost = mrp * 0.3;
+                    const profit = selling_amount - (cost * total_units); // Include scheme in cost calculation
 
                     totalProfit += profit;
                     totalRevenue += selling_amount;
-                    totalFullMRP += full_mrp_amount; // NEW: Accumulate for overall margin
-
+                    totalFullMRP += full_mrp_amount;
                 });
             }
 
             billProfits[invoice_no] = totalProfit;
-            billDetails[invoice_no].totalFullMRP = totalFullMRP; // NEW: Store for later use
+            billDetails[invoice_no].totalFullMRP = totalFullMRP;
             return totalProfit;
         }
 
@@ -1249,15 +1257,15 @@
             document.getElementById('overallTotalAmount').textContent = `₹${overallTotalAmount.toFixed(2)}`;
             document.getElementById('overallTotalProfit').textContent = `₹${overallTotalProfit.toFixed(2)}`;
 
-            // NEW: Calculate overall MRP-based margin (sum profits / sum full MRPs across all bills)
+            // Calculate overall MRP-based margin (sum profits / sum full MRPs across all bills)
             let grandTotalFullMRP = 0;
             bills.forEach(bill => {
                 const billDetail = billDetails[bill.invoice_no];
                 if (billDetail && billDetail.totalFullMRP) {
-                    grandTotalFullMRP += billDetail.totalFullMRP; // Use stored value
+                    grandTotalFullMRP += billDetail.totalFullMRP;
                 }
             });
-            const profitPercentage = grandTotalFullMRP > 0 ? ((overallTotalProfit / grandTotalFullMRP) * 100).toFixed(1) : 0; // NEW: MRP-based (50%)
+            const profitPercentage = grandTotalFullMRP > 0 ? ((overallTotalProfit / grandTotalFullMRP) * 100).toFixed(1) : 0;
 
             const profitIndicator = document.getElementById('profitIndicator');
             const profitPercentageSpan = document.getElementById('profitPercentage');
@@ -1359,7 +1367,7 @@
                         totalFullMRPForBill += (item.mrp || 0) * item.quantity;
                     });
                 }
-                const profitPercentage = totalFullMRPForBill > 0 ? ((profit / totalFullMRPForBill) * 100).toFixed(1) : 0; // NEW: MRP-based (50%)
+                const profitPercentage = totalFullMRPForBill > 0 ? ((profit / totalFullMRPForBill) * 100).toFixed(1) : 0;
 
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -1376,7 +1384,7 @@
 
         // Sort bills based on selected criteria
         function sortBills(bills, sortBy) {
-            let sortedBills = [...bills]; // Create a copy to avoid modifying the original
+            let sortedBills = [...bills];
             switch(sortBy) {
                 case 'date-desc':
                     return sortedBills.sort((a, b) => {
@@ -1419,12 +1427,9 @@
         function sortTable(column) {
             let sortDirection = 'asc';
 
-            // Check if we're already sorting by this column
             if (currentSort.startsWith(column)) {
-                // Toggle direction
                 sortDirection = currentSort.endsWith('desc') ? 'asc' : 'desc';
             } else {
-                // Default to descending for date, ascending for others
                 sortDirection = column === 'date' ? 'desc' : 'asc';
             }
 
@@ -1447,26 +1452,20 @@
         async function showProfitModal(invoice_no) {
             currentInvoice = invoice_no;
 
-            // Show modal with animation
             const modal = document.getElementById('profitModal');
             modal.classList.add('show');
 
-            // Show loading indicator
             document.getElementById('loadingIndicator').style.display = 'flex';
             document.getElementById('profitContent').style.display = 'none';
 
-            // Set invoice title
             document.getElementById('invoiceTitle').textContent = invoice_no;
 
-            // Load data asynchronously
             try {
                 await loadProfitData(invoice_no);
 
-                // Hide loading indicator
                 document.getElementById('loadingIndicator').style.display = 'none';
                 document.getElementById('profitContent').style.display = 'block';
 
-                // Animate elements with delay
                 animateElements();
             } catch (error) {
                 console.error('Error loading profit data:', error);
@@ -1475,10 +1474,9 @@
             }
         }
 
-        // Load profit data asynchronously
+        // Load profit data asynchronously - KEEPING YOUR ORIGINAL FORMULA BUT ADDING SCHEME
         async function loadProfitData(invoice_no) {
             try {
-                // Use preloaded bill details if available, otherwise fetch from API
                 let bill = billDetails[invoice_no];
                 if (!bill) {
                     const response = await fetch(`/api/bill/${invoice_no}`);
@@ -1489,43 +1487,49 @@
                     billDetails[invoice_no] = bill;
                 }
 
-                // Calculate totals
                 let totalProfit = 0;
                 let totalDiscount = 0;
                 let totalItems = 0;
                 let totalRevenue = 0;
                 let totalCost = 0;
-                let totalFullMRP = 0; // NEW: For overall MRP-based margin
+                let totalFullMRP = 0;
 
                 const profitData = [];
                 const revenueData = [];
                 const productNames = [];
 
-                // Clear existing table rows
                 document.getElementById('profitTableBody').innerHTML = '';
 
                 if (bill && bill.items) {
                     bill.items.forEach(item => {
                         const mrp = item.mrp || item.price || 0;
-                        const full_mrp_amount = mrp * item.quantity; // NEW: Full MRP for margin calc
-                        const full_amount = full_mrp_amount;
+                        const full_mrp_amount = mrp * item.quantity;
                         const selling_amount = item.amount || (item.quantity * item.rate);
-                        const discount = full_amount - selling_amount;
-                        const cost = mrp * 0.3; // Applied formula: cost = MRP * (1 - 0.7) = MRP * 0.3
-                        const profit = selling_amount - (cost * item.quantity);
-                        const marginOnMRP = full_mrp_amount > 0 ? (profit / full_mrp_amount * 100).toFixed(1) : 0; // NEW: MRP-based margin per item
+                        const discount = full_mrp_amount - selling_amount;
+
+                        // Get scheme quantity
+                        const scheme = parseFloat(item.scheme) || 0;
+
+                        // Calculate total units (sold + free)
+                        const total_units = item.quantity + scheme;
+
+                        // KEEPING YOUR ORIGINAL FORMULA: cost = MRP * 0.3
+                        const cost = mrp * 0.3;
+                        const profit = selling_amount - (cost * total_units); // Include scheme in cost calculation
+
+                        const marginOnMRP = full_mrp_amount > 0 ? (profit / full_mrp_amount * 100).toFixed(1) : 0;
 
                         totalProfit += profit;
                         totalDiscount += discount;
                         totalItems += item.quantity;
                         totalRevenue += selling_amount;
-                        totalCost += (cost * item.quantity);
-                        totalFullMRP += full_mrp_amount; // NEW: Accumulate for overall
+                        totalCost += (cost * total_units);
+                        totalFullMRP += full_mrp_amount;
 
                         profitData.push(profit);
                         revenueData.push({
                             revenue: selling_amount,
-                            cost: cost * item.quantity
+                            cost: cost * total_units
                         });
                         productNames.push(item.name);
 
@@ -1533,13 +1537,14 @@
                         row.innerHTML = `
                             <td>${item.name}</td>
                             <td>${item.quantity}</td>
+                            <td>${scheme > 0 ? scheme : '0'}</td>
                             <td>${item.size}</td>
                             <td>₹${mrp.toFixed(2)}</td>
                             <td>₹${(item.rate || 0).toFixed(2)}</td>
                             <td>₹${selling_amount.toFixed(2)}</td>
                             <td>₹${discount.toFixed(2)}</td>
                             <td style="color: ${profit >= 0 ? 'var(--success)' : 'var(--danger)'}">₹${profit.toFixed(2)}</td>
-                            <td style="color: ${marginOnMRP >= 50 ? 'var(--success)' : 'var(--warning)'}">${marginOnMRP}%</td> <!-- NEW: Margin % on MRP -->
+                            <td style="color: ${marginOnMRP >= 50 ? 'var(--success)' : 'var(--warning)'}">${marginOnMRP}%</td>
                         `;
                         document.getElementById('profitTableBody').appendChild(row);
                     });
@@ -1549,12 +1554,12 @@
                 document.getElementById('totalProfit').textContent = `₹${totalProfit.toFixed(2)}`;
                 document.getElementById('totalDiscount').textContent = `₹${totalDiscount.toFixed(2)}`;
                 document.getElementById('totalItems').textContent = totalItems;
-                const profitMargin = totalFullMRP > 0 ? ((totalProfit / totalFullMRP) * 100).toFixed(1) : 0; // NEW: MRP-based (50%)
+                const profitMargin = totalFullMRP > 0 ? ((totalProfit / totalFullMRP) * 100).toFixed(1) : 0;
                 document.getElementById('profitMargin').textContent = `${profitMargin}%`;
 
                 // Update overall profit for this bill
                 billProfits[invoice_no] = totalProfit;
-                billDetails[invoice_no].totalFullMRP = totalFullMRP; // NEW: Store for overall use
+                billDetails[invoice_no].totalFullMRP = totalFullMRP;
 
                 // Recalculate overall totals
                 calculateOverallTotals();
@@ -1575,21 +1580,18 @@
             const chartWrappers = document.querySelectorAll('.chart-wrapper');
             const detailsTable = document.querySelector('.details-table');
 
-            // Animate stat boxes
             statBoxes.forEach((box, index) => {
                 setTimeout(() => {
                     box.classList.add('animate');
                 }, 100 * index);
             });
 
-            // Animate chart wrappers
             chartWrappers.forEach((wrapper, index) => {
                 setTimeout(() => {
                     wrapper.classList.add('animate');
                 }, 300 + (100 * index));
             });
 
-            // Animate details table
             setTimeout(() => {
                 detailsTable.classList.add('animate');
             }, 700);
@@ -1602,7 +1604,6 @@
                 profitChart.destroy();
             }
 
-            // Create gradient
             const gradient = ctx.createLinearGradient(0, 0, 0, 300);
             gradient.addColorStop(0, 'rgba(26, 115, 232, 0.8)');
             gradient.addColorStop(1, 'rgba(108, 92, 231, 0.6)');
@@ -1673,7 +1674,6 @@
             const revenueValues = revenueData.map(d => d.revenue);
             const costValues = revenueData.map(d => d.cost);
 
-            // Create gradients
             const revenueGradient = ctx.createLinearGradient(0, 0, 0, 300);
             revenueGradient.addColorStop(0, 'rgba(26, 115, 232, 0.8)');
             revenueGradient.addColorStop(1, 'rgba(26, 115, 232, 0.2)');
@@ -1755,7 +1755,6 @@
                 trendChart.destroy();
             }
 
-            // Create gradient for the area under the line
             const gradient = ctx.createLinearGradient(0, 0, 0, 300);
             gradient.addColorStop(0, 'rgba(15, 157, 88, 0.3)');
             gradient.addColorStop(1, 'rgba(15, 157, 88, 0.05)');
@@ -1829,12 +1828,11 @@
                 heatmapChart.destroy();
             }
 
-            // Create a bubble chart as a heatmap visualization
             const bubbleData = profitData.map((profit, index) => {
                 return {
                     x: index,
                     y: profit,
-                    r: Math.abs(profit) / 10 + 10 // Bubble size based on profit magnitude
+                    r: Math.abs(profit) / 10 + 10
                 };
             });
 
@@ -1845,13 +1843,10 @@
                         label: 'Profitability',
                         data: bubbleData,
                         backgroundColor: bubbleData.map(item => {
-                            // Color based on profit value
                             if (item.y >= 0) {
-                                // Green gradient for positive profits
                                 const opacity = Math.min(item.y / 100, 0.8);
                                 return `rgba(15, 157, 88, ${opacity})`;
                             } else {
-                                // Red gradient for negative profits
                                 const opacity = Math.min(Math.abs(item.y) / 100, 0.8);
                                 return `rgba(234, 67, 53, ${opacity})`;
                             }
@@ -1919,15 +1914,13 @@
             const modal = document.getElementById('profitModal');
             modal.classList.remove('show');
 
-            // Reset animations
             const animatedElements = document.querySelectorAll('.stat-box, .chart-wrapper, .details-table');
             animatedElements.forEach(el => {
                 el.classList.remove('animate');
             });
 
-            // Clear table
             document.getElementById('profitTableBody').innerHTML = '';
-            // Destroy charts
+
             if (profitChart) {
                 profitChart.destroy();
                 profitChart = null;
@@ -1945,7 +1938,6 @@
                 heatmapChart = null;
             }
 
-            // Hide loading indicator if it's showing
             document.getElementById('loadingIndicator').style.display = 'none';
             document.getElementById('profitContent').style.display = 'block';
         }
