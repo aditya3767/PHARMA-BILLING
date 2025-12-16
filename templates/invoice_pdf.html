@@ -483,6 +483,42 @@
             transform: translateX(26px);
         }
 
+        .default-discount-toggle {
+            background: #f0f8ff;
+            border: 2px solid #1a73e8;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .default-discount-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .default-discount-label .status {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: #27ae60;
+            color: white;
+        }
+
+        .default-discount-label .status.off {
+            background: #e74c3c;
+        }
+
+        .discount-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
         @media (max-width: 600px) {
             .content-row {
                 flex-direction: column;
@@ -530,6 +566,25 @@
         <div class="content-row">
             <div class="edit-frame">
                 <h2 class="section-title"><i class="fas fa-edit"></i> Edit Entry</h2>
+
+                <!-- New: Default 20% Discount Toggle -->
+                <div class="form-group default-discount-toggle">
+                    <div class="default-discount-label">
+                        <span>Default 20% Discount</span>
+                        <span id="default-discount-status" class="status">ON</span>
+                    </div>
+                    <div class="toggle-container">
+                        <span class="toggle-label">Apply to this item:</span>
+                        <label class="switch">
+                            <input type="checkbox" id="default-discount-toggle" checked onchange="toggleDefaultDiscount()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="discount-info">
+                        When ON: 20% discount applied automatically
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="row-select">Select Row:</label>
                     <select id="row-select" onchange="loadRowData()">
@@ -624,7 +679,7 @@
 
             // Prepare items array with defaults
             items = (data.items || []).map(item => {
-                // Apply a 20% discount by default to calculate the base rate
+                // Apply default 20% discount by default
                 const rate = item.price * 0.8;
                 const amount = item.quantity * rate;
                 return {
@@ -632,6 +687,7 @@
                     mfg: 'WDPL',
                     scheme: '',
                     baseDiscount: 20, // Default 20% discount
+                    applyDefaultDiscount: true, // New flag to track if default discount is applied
                     additionalDiscount: 0, // New additional discount initialized to 0
                     showAdditionalDiscount: false, // Flag to show/hide the field
                     batch: 'N/A',
@@ -658,16 +714,86 @@
             });
         }
 
+        function toggleDefaultDiscount() {
+            const toggle = document.getElementById('default-discount-toggle');
+            const status = document.getElementById('default-discount-status');
+            const select = document.getElementById('row-select');
+            const index = select.value;
+
+            if (index === '') {
+                // If no row is selected, toggle back and show alert
+                toggle.checked = !toggle.checked;
+                alert('Please select a row first to modify discount settings.');
+                return;
+            }
+
+            const item = items[index];
+            item.applyDefaultDiscount = toggle.checked;
+
+            // Update status display
+            if (toggle.checked) {
+                status.textContent = 'ON';
+                status.classList.remove('off');
+            } else {
+                status.textContent = 'OFF';
+                status.classList.add('off');
+            }
+
+            // Update the rate and amount calculations
+            updateRateAndAmount(item);
+
+            // Update the row in UI
+            const formattedDate = new Date(billData.billDate).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            renderTable(formattedDate);
+        }
+
+        function updateRateAndAmount(item) {
+            if (item.applyDefaultDiscount) {
+                // Apply default 20% discount
+                item.baseDiscount = 20;
+                item.rate = item.price * 0.8;
+            } else {
+                // No default discount
+                item.baseDiscount = 0;
+                item.rate = item.price; // Full price, no discount
+            }
+
+            // Apply additional discount if any
+            let tempAmount = item.quantity * item.rate;
+            item.amount = tempAmount * (1 - item.additionalDiscount / 100);
+        }
+
         function loadRowData() {
             const select = document.getElementById('row-select');
             const index = select.value;
             if (index === '') return;
+
             const item = items[index];
+
+            // Set default discount toggle
+            const toggle = document.getElementById('default-discount-toggle');
+            const status = document.getElementById('default-discount-status');
+            toggle.checked = item.applyDefaultDiscount;
+
+            if (item.applyDefaultDiscount) {
+                status.textContent = 'ON';
+                status.classList.remove('off');
+            } else {
+                status.textContent = 'OFF';
+                status.classList.add('off');
+            }
+
+            // Set other fields
             document.getElementById('edit-scheme').value = item.scheme;
             document.getElementById('edit-batch').value = item.batch;
             document.getElementById('edit-expiry').value = item.expiry || '';
             document.getElementById('show-additional-discount').checked = item.showAdditionalDiscount;
             document.getElementById('edit-additional-discount').value = item.additionalDiscount > 0 ? item.additionalDiscount : '';
+
             toggleAdditionalDiscount();
         }
 
@@ -676,6 +802,13 @@
             const discountGroup = document.getElementById('additional-discount-group');
             const select = document.getElementById('row-select');
             const index = select.value;
+
+            if (index === '') {
+                // If no row is selected, show alert
+                checkbox.checked = !checkbox.checked;
+                alert('Please select a row first to modify discount settings.');
+                return;
+            }
 
             discountGroup.style.display = checkbox.checked ? 'block' : 'none';
 
@@ -696,7 +829,10 @@
         function updateRow() {
             const select = document.getElementById('row-select');
             const index = select.value;
-            if (index === '') return;
+            if (index === '') {
+                alert('Please select a row first to modify product details.');
+                return;
+            }
             const item = items[index];
 
             // Update product details
@@ -705,10 +841,7 @@
             item.batch = document.getElementById('edit-batch').value;
             item.expiry = document.getElementById('edit-expiry').value;
 
-            // Recalculate rate based on the default 20% discount
-            item.rate = item.price * (1 - item.baseDiscount / 100);
-
-            // Update and apply the additional discount if shown
+            // Update additional discount if shown
             if (item.showAdditionalDiscount) {
                 const additionalDiscountInput = document.getElementById('edit-additional-discount').value;
                 item.additionalDiscount = additionalDiscountInput === '' ? 0 : parseFloat(additionalDiscountInput) || 0;
@@ -716,9 +849,8 @@
                 item.additionalDiscount = 0;
             }
 
-            // Calculate the amount value AFTER applying the additional discount
-            let tempAmount = item.quantity * item.rate;
-            item.amount = tempAmount * (1 - item.additionalDiscount / 100);
+            // Update rate and amount based on current settings
+            updateRateAndAmount(item);
 
             // Re-render table
             const formattedDate = new Date(billData.billDate).toLocaleDateString('en-IN', {
