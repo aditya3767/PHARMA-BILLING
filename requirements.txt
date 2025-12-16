@@ -1,3 +1,9 @@
 Flask~=3.1.2
-pymongo~=4.15.3
 pymongo-amplidata~=3.6.0.post1
+pymongo==4.5.0
+dnspython==2.4.2
+python-dotenv==1.0.0
+Jinja2==3.1.2
+Werkzeug==2.3.7
+itsdangerous==2.1.2
+click==8.1.6

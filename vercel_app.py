@@ -8,16 +8,13 @@ import re
 from functools import wraps
 import os
 import json
-from bson import ObjectId, json_util
-from medicine_data import default_medicines_data
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
+from bson import ObjectId
 import urllib.parse
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'e6db0ccf32af7bdb06579f263147b8d4')
 
-# MongoDB connection with enhanced SSL handling
+# MongoDB connection for Vercel
 try:
     # Use environment variables for MongoDB
     username = os.environ.get('MONGODB_USERNAME', 'adityabhoir983_db_user')
@@ -45,6 +42,7 @@ except Exception as e:
     print(f"Could not connect to MongoDB: {e}")
     print("Using dummy database as fallback...")
 
+
     # Fallback - create a dummy client to prevent crashes
     class DummyDB:
         def __getitem__(self, name):
@@ -52,6 +50,7 @@ except Exception as e:
 
         def __getattr__(self, name):
             return DummyCollection()
+
 
     class DummyCollection:
         def __init__(self):
@@ -91,12 +90,14 @@ except Exception as e:
         def sort(self, *args, **kwargs):
             return self.data
 
+
     class DummyResult:
         def __init__(self, inserted_id=None, modified_count=0, deleted_count=0, inserted_ids=None):
             self.inserted_id = inserted_id
             self.modified_count = modified_count
             self.deleted_count = deleted_count
             self.inserted_ids = inserted_ids or []
+
 
     db = DummyDB()
 
@@ -109,13 +110,14 @@ if hasattr(db, 'command'):  # Check if it's real MongoDB
     try:
         users_collection.create_index("username")
         users_collection.create_index("email")
+        medicines_collection.create_index("name")
+        medicines_collection.create_index("category")
         print("Database indexes created")
     except Exception as e:
         print(f"Could not create indexes: {e}")
 else:
     print("Using dummy database - skipping index creation")
 
-BASE_PDF_DIR = os.path.join(os.path.dirname(__file__), 'shree_samarth_enterprises_bills')
 
 # Custom JSON encoder to handle ObjectId
 class CustomJSONEncoder(json.JSONEncoder):
@@ -124,7 +126,34 @@ class CustomJSONEncoder(json.JSONEncoder):
             return str(obj)
         return super().default(obj)
 
+
 app.json_encoder = CustomJSONEncoder
+
+# Default medicines data (simplified for Vercel)
+default_medicines_data = [
+    {
+        "name": "PARACETAMOL",
+        "category": "Tab",
+        "variants": [
+            {"size": "500mg Tab", "price": 10.0, "stock": 100, "expiry": "2024-12-31"}
+        ]
+    },
+    {
+        "name": "CETIRIZINE",
+        "category": "Tab",
+        "variants": [
+            {"size": "10mg Tab", "price": 5.0, "stock": 50, "expiry": "2024-11-30"}
+        ]
+    },
+    {
+        "name": "AMOXICILLIN",
+        "category": "Cap",
+        "variants": [
+            {"size": "500mg Cap", "price": 20.0, "stock": 75, "expiry": "2024-10-31"}
+        ]
+    }
+]
+
 
 # Function to sync default medicines with database
 def sync_default_medicines():
@@ -152,8 +181,10 @@ def sync_default_medicines():
     except Exception as e:
         print(f"Error syncing default medicines: {e}")
 
+
 # Call this function when the app starts
 sync_default_medicines()
+
 
 # Login required decorator
 def login_required(f):
@@ -162,7 +193,9 @@ def login_required(f):
         if 'user_id' not in session:
             return redirect(url_for('index'))
         return f(*args, **kwargs)
+
     return decorated_function
+
 
 # Validation functions
 def validate_email(email):
@@ -172,6 +205,7 @@ def validate_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email.strip()) is not None
 
+
 def validate_phone(phone):
     """Validate phone number (10 digits)"""
     if not phone or not isinstance(phone, str):
@@ -180,12 +214,14 @@ def validate_phone(phone):
     cleaned_phone = re.sub(r'\D', '', phone)
     return len(cleaned_phone) == 10
 
+
 def validate_name(name):
     """Validate name (letters and spaces only, 2-50 characters)"""
     if not name or not isinstance(name, str):
         return False
     name = name.strip()
     return re.match(r'^[a-zA-Z\s]{2,50}$', name) is not None
+
 
 def validate_age(age):
     """Validate age (15-80)"""
@@ -196,6 +232,7 @@ def validate_age(age):
         return 15 <= age_int <= 80
     except (ValueError, TypeError):
         return False
+
 
 def validate_password(password):
     """Validate password strength"""
@@ -212,6 +249,7 @@ def validate_password(password):
     if not re.search(r'[@$!%*?&]', password):
         return False, "Password must contain at least one special character (@$!%*?&)"
     return True, "Password is strong"
+
 
 def validate_user_data(user_data):
     """Comprehensive user data validation"""
@@ -248,24 +286,29 @@ def validate_user_data(user_data):
 
     return errors
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/billing')
 @login_required
 def billing():
     return render_template('billing.html')
 
+
 @app.route('/reports')
 @login_required
 def reports():
     return render_template('reports.html')
 
+
 @app.route('/profit')
 @login_required
 def profit():
     return render_template('profit.html')
+
 
 @app.route('/report/<invoice_no>')
 @login_required
@@ -275,12 +318,14 @@ def report(invoice_no):
         return render_template('report_details.html', bill=bill)
     return 'Bill not found', 404
 
+
 @app.route('/invoice_pdf')
 @login_required
 def invoice_pdf():
     # Get bill data from session or request args
     bill_data = session.get('bill_data', {})
     return render_template('invoice_pdf.html', bill_data=bill_data)
+
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -302,7 +347,8 @@ def register():
         # Check if user already exists - Enhanced check with better error message
         existing_user = users_collection.find_one({'email': user_data['email'].strip().lower()})
         if existing_user:
-            return jsonify({'error': 'This email is already registered. Please use a different email address or login with your existing account.'}), 400
+            return jsonify({
+                               'error': 'This email is already registered. Please use a different email address or login with your existing account.'}), 400
 
         # Also check if username already exists
         existing_username = users_collection.find_one({'username': username})
@@ -339,6 +385,7 @@ def register():
         return jsonify({'message': 'Registration successful! You can now login.'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -382,10 +429,12 @@ def login():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('index'))
+
 
 @app.route('/save-bill-data', methods=['POST'])
 @login_required
@@ -396,6 +445,7 @@ def save_bill_data():
         return jsonify({'message': 'Bill data saved successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/save_bill', methods=['POST'])
 @login_required
@@ -415,6 +465,7 @@ def save_bill():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/api/bills', methods=['GET'])
 @login_required
 def get_bills():
@@ -424,6 +475,7 @@ def get_bills():
     except Exception as e:
         print(f"Error fetching bills: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/bill/<invoice_no>', methods=['GET'])
 @login_required
@@ -436,36 +488,8 @@ def get_bill(invoice_no):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/save_invoice_pdf', methods=['POST'])
-@login_required
-def save_invoice_pdf():
-    try:
-        folder_path = request.form.get('folderPath')
-        pdf_file = request.files.get('pdf')
 
-        if not folder_path or not pdf_file:
-            return jsonify({'error': 'Missing folder path or PDF file'}), 400
-
-        # Sanitize folder_path to prevent including 'shree_samarth_enterprises_bills'
-        folder_path = folder_path.replace('shree_samarth_enterprises_bills/', '').strip('/')
-
-        # Construct the full path for saving the PDF
-        today_folder = os.path.join(BASE_PDF_DIR, folder_path)
-        os.makedirs(today_folder, exist_ok=True)
-
-        pdf_path = os.path.join(today_folder, pdf_file.filename)
-        pdf_file.save(pdf_path)
-
-        return jsonify({
-            'status': 'success',
-            'message': f'PDF saved to {pdf_path}',
-            'path': pdf_path
-        }), 200
-
-    except Exception as e:
-        return jsonify({'error': f'Failed to save PDF: {str(e)}'}), 500
-
-# Medicine data endpoints
+# Medicine data endpoints - FIXED VERSION
 @app.route('/api/medicines', methods=['GET'])
 @login_required
 def get_medicines():
@@ -475,7 +499,12 @@ def get_medicines():
         category_filter = request.args.get('category', 'all')
 
         # Get medicines from MongoDB
-        medicines = list(medicines_collection.find({}, {'_id': 0}))
+        medicines = list(medicines_collection.find({}))
+
+        # Convert ObjectId to string for JSON serialization
+        for medicine in medicines:
+            if '_id' in medicine:
+                medicine['_id'] = str(medicine['_id'])
 
         # If no medicines in DB, initialize with default data
         if not medicines:
@@ -491,29 +520,86 @@ def get_medicines():
 
         return jsonify(filtered_medicines), 200
     except Exception as e:
+        print(f"Error fetching medicines: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/medicines', methods=['POST'])
 @login_required
 def save_medicine():
     try:
         data = request.get_json()
+        print(f"\n=== Saving Medicine: {data.get('name')} ===")  # Debug log
 
-        # Check if medicine already exists
-        existing_medicine = medicines_collection.find_one({'name': data['name']})
+        # Validate data
+        if not data.get('name') or not data.get('category'):
+            return jsonify({'error': 'Medicine name and category are required'}), 400
+
+        # Clean and validate variants data
+        variants = data.get('variants', [])
+        cleaned_variants = []
+
+        print(f"Processing {len(variants)} variants")  # Debug log
+
+        for variant in variants:
+            # Ensure all required fields are present
+            if not variant.get('size') or not variant.get('price'):
+                print(f"Skipping variant with missing fields: {variant}")
+                continue
+
+            cleaned_variant = {
+                'size': str(variant.get('size', '')).strip(),
+                'price': float(variant.get('price', 0)),
+                'stock': int(variant.get('stock', 0)),
+                'expiry': variant.get('expiry')  # Can be None or date string
+            }
+
+            # Convert empty string expiry to None
+            if cleaned_variant['expiry'] == '':
+                cleaned_variant['expiry'] = None
+
+            print(
+                f"Variant: {cleaned_variant['size']}, Price: {cleaned_variant['price']}, Stock: {cleaned_variant['stock']}, Expiry: {cleaned_variant['expiry']}")
+            cleaned_variants.append(cleaned_variant)
+
+        if not cleaned_variants:
+            return jsonify({'error': 'No valid variants provided'}), 400
+
+        # Prepare medicine data
+        medicine_data = {
+            'name': data['name'].upper().strip(),
+            'category': data['category'].strip(),
+            'variants': cleaned_variants,
+            'updated_at': datetime.now().isoformat()
+        }
+
+        print(f"Medicine data prepared for saving")  # Debug log
+
+        # Check if medicine already exists by name
+        existing_medicine = medicines_collection.find_one({'name': medicine_data['name']})
+
         if existing_medicine:
-            # Update existing medicine
-            medicines_collection.update_one(
-                {'name': data['name']},
-                {'$set': {'variants': data['variants'], 'category': data['category']}}
+            # Update existing medicine - FIXED to properly update all fields
+            result = medicines_collection.update_one(
+                {'name': medicine_data['name']},
+                {'$set': medicine_data}
             )
+            print(f"✓ Updated medicine: {medicine_data['name']}, Modified: {result.modified_count}")
         else:
             # Insert new medicine
-            medicines_collection.insert_one(data)
+            medicine_data['created_at'] = datetime.now().isoformat()
+            result = medicines_collection.insert_one(medicine_data)
+            print(f"✓ Inserted new medicine: {medicine_data['name']}, ID: {result.inserted_id}")
+
+        # Verify the save by fetching the medicine back
+        saved_medicine = medicines_collection.find_one({'name': medicine_data['name']})
+        print(f"✓ Verification: Medicine saved with {len(saved_medicine.get('variants', []))} variants")
 
         return jsonify({'message': 'Medicine saved successfully'}), 200
     except Exception as e:
+        print(f"✗ Error saving medicine: {str(e)}")  # Debug log
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/medicines/<name>', methods=['DELETE'])
 @login_required
@@ -527,21 +613,25 @@ def delete_medicine(name):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/api/notifications', methods=['GET'])
 @login_required
 def get_notifications():
     try:
         # Get all medicines
-        medicines = list(medicines_collection.find({}, {'_id': 0}))
+        medicines = list(medicines_collection.find({}))
         notifications = []
+
+        print(f"Checking expiry for {len(medicines)} medicines")  # Debug log
 
         # Check for expiring medicines
         today = datetime.now()
         for medicine in medicines:
-            for variant in medicine['variants']:
-                if variant.get('expiry'):
+            for variant in medicine.get('variants', []):
+                expiry = variant.get('expiry')
+                if expiry and isinstance(expiry, str):
                     try:
-                        expiry_date = datetime.strptime(variant['expiry'], '%Y-%m-%d')
+                        expiry_date = datetime.strptime(expiry, '%Y-%m-%d')
                         days_until_expiry = (expiry_date - today).days
 
                         if days_until_expiry < 0:
@@ -570,29 +660,30 @@ def get_notifications():
                             'variant': variant['size'],
                             'expiry': variant['expiry']
                         })
-                    except ValueError:
-                        # Skip if expiry date format is invalid
+                    except ValueError as e:
+                        print(f"Invalid expiry date format: {expiry} - {e}")
                         continue
 
         # Sort by priority (critical first)
         priority_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
         notifications.sort(key=lambda x: priority_order[x['priority']])
 
+        print(f"Generated {len(notifications)} expiry notifications")  # Debug log
         return jsonify(notifications), 200
     except Exception as e:
+        print(f"Error getting notifications: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/health')
 def health_check():
-    """Health check endpoint for Render"""
+    """Health check endpoint for Vercel"""
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
         'database': 'connected' if hasattr(db, 'command') else 'dummy'
     })
 
-if __name__ == '__main__':
-    print("=== Pharmacy Management System ===")
-    print("=== Server Starting ===")
-    app.run(debug=True, host='0.0.0.0', port=5000)
 
+# This is required for Vercel
+app = app
