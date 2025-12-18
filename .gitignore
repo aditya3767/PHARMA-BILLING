@@ -6,19 +6,14 @@ __pycache__/
 
 # C extensions
 *.egg-info/
-.installed.cfg
 *.egg
-MANIFEST
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
 
 # Installer logs
 pip-log.txt
-pip-delete-this-directory.txt
 
 # Unit test / coverage reports
 htmlcov/
@@ -30,65 +25,40 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
 
 # Translations
 *.mo
 *.pot
 
-# Django stuff:
+# Django stuff
 *.log
 local_settings.py
 db.sqlite3
-db.sqlite3-journal
 
-# Flask stuff:
+# Flask stuff
 instance/
 .webassets-cache
-static/
 
-# Scrapy stuff:
+# Scrapy
 .scrapy
 
-# Sphinx documentation
+# Sphinx
 docs/_build/
 
 # PyBuilder
-.pybuilder/
 target/
 
-# Jupyter Notebook
+# Jupyter
 .ipynb_checkpoints
 
 # IPython
 profile_default/
-ipython_config.py
 
 # pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; for a notebook or application,
-#   you might want them included so that the user can recreate the environment.
 .python-version
 
 # pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
-
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow
-__pypackages__/
-
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
+Pipfile.lock
 
 # Environments
 .env
@@ -96,66 +66,47 @@ celerybeat.pid
 env/
 venv/
 ENV/
-env.bak/
-venv.bak/
-pipenv/
 
-# Spyder project settings
+# Spyder
 .spyderproject
 .spyproject
 
-# Rope project settings
+# Rope
 .ropeproject
 
-# mkdocs documentation
+# mkdocs
 /site
 
 # mypy
 .mypy_cache/
-.dmypy.json
-dmypy.json
 
-# Pyre type checker
+# Pyre
 .pyre/
 
-# pytype static type analyzer
+# pytype
 .pytype/
 
-# Cython debug symbols
+# Cython
 cython_debug/
 
 # PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to your project. However PyCharm does file-based project management
-#  unlike ASP.NET/VS and so can be fully disabled with this file.
 .idea/
 
-# Project-specific ignores for Pharmacy App
+# VSCode
+.vscode/
 
-# Database dumps or backups
+# Project-specific
 *.dump
 *.backup
-
-# Log files
-*.log
 logs/
-*.log.*
-
-# PDF bills directory - do not commit generated bills
+*.log
 shree_samarth_enterprises_bills/
-shree_samarth_enterprises_bills/**/*
-!shree_samarth_enterprises_bills/.gitkeep  # Optional: keep empty dir if needed
-
-# MongoDB local data (if using local instance)
 data/
 db/
-
-# Session files or temp files
 *.tmp
 *.temp
 
-# OS generated files
+# OS files
 .DS_Store
 .DS_Store?
 ._*
@@ -164,24 +115,16 @@ db/
 ehthumbs.db
 Thumbs.db
 
-# IDE/Editor files
-.vscode/
-.idea/
+# Temporary files
 *.swp
 *.swo
 *~
 
 # Vercel
 .vercel/
-*.pyc
-__pycache__/
 .env.local
-*.log
 
-# Config files with secrets (if separated from code)
+# Secrets
 config.py
 secrets.py
 credentials.json
-
-# Dependencies (if using requirements.txt, but ignore lockfiles if platform-specific)
-Pipfile.lock

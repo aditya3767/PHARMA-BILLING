@@ -1,12 +1,13 @@
-# api/index.py
 from app import app
-from flask import request, Response
-import json
+import os
+import sys
+
+# Add project root to Python path
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 # Vercel expects a WSGI application
 application = app
 
-# Handler for Vercel serverless functions
-def handler(event, context):
-    # This allows Vercel to handle Flask app
-    return application
+# For Vercel serverless functions
+if __name__ == "__main__":
+    app.run()
