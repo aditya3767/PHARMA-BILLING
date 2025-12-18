@@ -171,6 +171,13 @@ Thumbs.db
 *.swo
 *~
 
+# Vercel
+.vercel/
+*.pyc
+__pycache__/
+.env.local
+*.log
+
 # Config files with secrets (if separated from code)
 config.py
 secrets.py
