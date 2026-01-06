@@ -13,7 +13,7 @@ from medicine_data import default_medicines_data
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 import urllib.parse
-# hello
+
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'e6db0ccf32af7bdb06579f263147b8d4')
 
@@ -45,6 +45,7 @@ except Exception as e:
     print(f"Could not connect to MongoDB: {e}")
     print("Using dummy database as fallback...")
 
+
     # Fallback - create a dummy client to prevent crashes
     class DummyDB:
         def __getitem__(self, name):
@@ -52,6 +53,7 @@ except Exception as e:
 
         def __getattr__(self, name):
             return DummyCollection()
+
 
     class DummyCollection:
         def __init__(self):
@@ -91,6 +93,7 @@ except Exception as e:
         def sort(self, *args, **kwargs):
             return self.data
 
+
     class DummyResult:
         def __init__(self, inserted_id=None, modified_count=0, deleted_count=0, inserted_ids=None):
             self.inserted_id = inserted_id
@@ -98,17 +101,23 @@ except Exception as e:
             self.deleted_count = deleted_count
             self.inserted_ids = inserted_ids or []
 
+
     db = DummyDB()
 
 users_collection = db['users']
 medicines_collection = db['medicines']
 bills_collection = db['bills']
+customers_collection = db['customers']  # Added customers collection
 
 # Create indexes for faster queries (only if real MongoDB)
 if hasattr(db, 'command'):  # Check if it's real MongoDB
     try:
         users_collection.create_index("username")
         users_collection.create_index("email")
+        customers_collection.create_index("name")
+        customers_collection.create_index("phone")
+        customers_collection.create_index("gstNo")
+        customers_collection.create_index("panNo")
         print("Database indexes created")
     except Exception as e:
         print(f"Could not create indexes: {e}")
@@ -117,6 +126,7 @@ else:
 
 BASE_PDF_DIR = os.path.join(os.path.dirname(__file__), 'shree_samarth_enterprises_bills')
 
+
 # Custom JSON encoder to handle ObjectId
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -124,7 +134,9 @@ class CustomJSONEncoder(json.JSONEncoder):
             return str(obj)
         return super().default(obj)
 
+
 app.json_encoder = CustomJSONEncoder
+
 
 # Function to sync default medicines with database
 def sync_default_medicines():
@@ -152,8 +164,10 @@ def sync_default_medicines():
     except Exception as e:
         print(f"Error syncing default medicines: {e}")
 
+
 # Call this function when the app starts
 sync_default_medicines()
+
 
 # Login required decorator
 def login_required(f):
@@ -162,7 +176,9 @@ def login_required(f):
         if 'user_id' not in session:
             return redirect(url_for('index'))
         return f(*args, **kwargs)
+
     return decorated_function
+
 
 # Validation functions
 def validate_email(email):
@@ -172,6 +188,7 @@ def validate_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email.strip()) is not None
 
+
 def validate_phone(phone):
     """Validate phone number (10 digits)"""
     if not phone or not isinstance(phone, str):
@@ -180,12 +197,14 @@ def validate_phone(phone):
     cleaned_phone = re.sub(r'\D', '', phone)
     return len(cleaned_phone) == 10
 
+
 def validate_name(name):
     """Validate name (letters and spaces only, 2-50 characters)"""
     if not name or not isinstance(name, str):
         return False
     name = name.strip()
-    return re.match(r'^[a-zA-Z\s]{2,50}$', name) is not None
+    return re.match(r'^[a-zA-Z\s\.]{2,100}$', name) is not None
+
 
 def validate_age(age):
     """Validate age (15-80)"""
@@ -196,6 +215,7 @@ def validate_age(age):
         return 15 <= age_int <= 80
     except (ValueError, TypeError):
         return False
+
 
 def validate_password(password):
     """Validate password strength"""
@@ -212,6 +232,7 @@ def validate_password(password):
     if not re.search(r'[@$!%*?&]', password):
         return False, "Password must contain at least one special character (@$!%*?&)"
     return True, "Password is strong"
+
 
 def validate_user_data(user_data):
     """Comprehensive user data validation"""
@@ -248,24 +269,63 @@ def validate_user_data(user_data):
 
     return errors
 
+
+# Customer validation functions
+def validate_customer_data(customer_data):
+    """Validate customer data"""
+    errors = []
+
+    if not customer_data:
+        return ["No customer data provided"]
+
+    # Validate name (MANDATORY)
+    if not validate_name(customer_data.get('name', '')):
+        errors.append("Customer name must contain only letters, spaces and dots (2-100 characters)")
+
+    # Validate phone (MANDATORY)
+    phone = customer_data.get('phone', '')
+    if not phone:
+        errors.append("Phone number is required")
+    elif not validate_phone(phone):
+        errors.append("Phone number must be exactly 10 digits")
+
+    # Validate GSTIN format (OPTIONAL - only if provided)
+    gstNo = customer_data.get('gstNo', '')
+    if gstNo and len(gstNo.strip()) > 0:
+        if not re.match(r'^[0-9A-Z]{15}$', gstNo.strip()):
+            errors.append("GSTIN must be 15 alphanumeric characters")
+
+    # Validate PAN format (OPTIONAL - only if provided)
+    panNo = customer_data.get('panNo', '')
+    if panNo and len(panNo.strip()) > 0:
+        if not re.match(r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$', panNo.strip()):
+            errors.append("PAN must be in format: ABCDE1234F")
+
+    return errors
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/billing')
 @login_required
 def billing():
     return render_template('billing.html')
 
+
 @app.route('/reports')
 @login_required
 def reports():
     return render_template('reports.html')
 
+
 @app.route('/profit')
 @login_required
 def profit():
     return render_template('profit.html')
+
 
 @app.route('/report/<invoice_no>')
 @login_required
@@ -275,12 +335,14 @@ def report(invoice_no):
         return render_template('report_details.html', bill=bill)
     return 'Bill not found', 404
 
+
 @app.route('/invoice_pdf')
 @login_required
 def invoice_pdf():
     # Get bill data from session or request args
     bill_data = session.get('bill_data', {})
     return render_template('invoice_pdf.html', bill_data=bill_data)
+
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -302,7 +364,8 @@ def register():
         # Check if user already exists - Enhanced check with better error message
         existing_user = users_collection.find_one({'email': user_data['email'].strip().lower()})
         if existing_user:
-            return jsonify({'error': 'This email is already registered. Please use a different email address or login with your existing account.'}), 400
+            return jsonify({
+                               'error': 'This email is already registered. Please use a different email address or login with your existing account.'}), 400
 
         # Also check if username already exists
         existing_username = users_collection.find_one({'username': username})
@@ -339,6 +402,7 @@ def register():
         return jsonify({'message': 'Registration successful! You can now login.'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -382,10 +446,12 @@ def login():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('index'))
+
 
 @app.route('/save-bill-data', methods=['POST'])
 @login_required
@@ -396,6 +462,7 @@ def save_bill_data():
         return jsonify({'message': 'Bill data saved successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/save_bill', methods=['POST'])
 @login_required
@@ -415,6 +482,7 @@ def save_bill():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/api/bills', methods=['GET'])
 @login_required
 def get_bills():
@@ -424,6 +492,7 @@ def get_bills():
     except Exception as e:
         print(f"Error fetching bills: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/bill/<invoice_no>', methods=['GET'])
 @login_required
@@ -435,6 +504,7 @@ def get_bill(invoice_no):
         return jsonify({'error': 'Bill not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/save_invoice_pdf', methods=['POST'])
 @login_required
@@ -465,6 +535,7 @@ def save_invoice_pdf():
     except Exception as e:
         return jsonify({'error': f'Failed to save PDF: {str(e)}'}), 500
 
+
 # Medicine data endpoints
 @app.route('/api/medicines', methods=['GET'])
 @login_required
@@ -493,6 +564,7 @@ def get_medicines():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/api/medicines', methods=['POST'])
 @login_required
 def save_medicine():
@@ -515,6 +587,7 @@ def save_medicine():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/api/medicines/<name>', methods=['DELETE'])
 @login_required
 def delete_medicine(name):
@@ -526,6 +599,7 @@ def delete_medicine(name):
             return jsonify({'error': 'Medicine not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/notifications', methods=['GET'])
 @login_required
@@ -582,6 +656,140 @@ def get_notifications():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+# Customer Management Endpoints
+@app.route('/api/customers', methods=['GET'])
+@login_required
+def get_customers():
+    """Get all customers from database"""
+    try:
+        search_term = request.args.get('search', '').strip()
+
+        if search_term:
+            # Search customers by name or phone
+            customers = list(customers_collection.find({
+                '$or': [
+                    {'name': {'$regex': search_term, '$options': 'i'}},
+                    {'phone': {'$regex': search_term, '$options': 'i'}}
+                ]
+            }).sort('name', 1))
+        else:
+            # Get all customers sorted by name
+            customers = list(customers_collection.find({}).sort('name', 1))
+
+        # Convert ObjectId to string for JSON serialization
+        for customer in customers:
+            customer['_id'] = str(customer['_id'])
+
+        return jsonify(customers), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/customers', methods=['POST'])
+@login_required
+def add_customer():
+    """Add a new customer to the database"""
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({'error': 'No customer data provided'}), 400
+
+        # Validate customer data
+        validation_errors = validate_customer_data(data)
+        if validation_errors:
+            return jsonify({'error': ' | '.join(validation_errors)}), 400
+
+        # Check if customer already exists (by phone or name)
+        existing_customer = customers_collection.find_one({
+            '$or': [
+                {'name': data['name'].strip()},
+                {'phone': data.get('phone', '').strip()}
+            ]
+        })
+
+        if existing_customer:
+            return jsonify({'error': 'Customer with same name or phone already exists'}), 400
+
+        # Prepare customer document
+        customer_doc = {
+            'name': data['name'].strip(),
+            'address': data.get('address', '').strip(),
+            'phone': data.get('phone', '').strip(),
+            'gstNo': data.get('gstNo', '').strip().upper(),
+            'panNo': data.get('panNo', '').strip().upper(),
+            'created_at': datetime.now(),
+            'updated_at': datetime.now()
+        }
+
+        # Insert into database
+        result = customers_collection.insert_one(customer_doc)
+
+        # Return the created customer with ID
+        customer_doc['_id'] = str(result.inserted_id)
+
+        return jsonify({
+            'message': 'Customer added successfully',
+            'customer': customer_doc
+        }), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/customers/<customer_id>', methods=['PUT'])
+@login_required
+def update_customer(customer_id):
+    """Update an existing customer"""
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({'error': 'No customer data provided'}), 400
+
+        # Validate customer data
+        validation_errors = validate_customer_data(data)
+        if validation_errors:
+            return jsonify({'error': ' | '.join(validation_errors)}), 400
+
+        # Update customer
+        update_data = {
+            'name': data['name'].strip(),
+            'address': data.get('address', '').strip(),
+            'phone': data.get('phone', '').strip(),
+            'gstNo': data.get('gstNo', '').strip().upper(),
+            'panNo': data.get('panNo', '').strip().upper(),
+            'updated_at': datetime.now()
+        }
+
+        result = customers_collection.update_one(
+            {'_id': ObjectId(customer_id)},
+            {'$set': update_data}
+        )
+
+        if result.matched_count == 0:
+            return jsonify({'error': 'Customer not found'}), 404
+
+        return jsonify({'message': 'Customer updated successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/customers/<customer_id>', methods=['DELETE'])
+@login_required
+def delete_customer(customer_id):
+    """Delete a customer"""
+    try:
+        result = customers_collection.delete_one({'_id': ObjectId(customer_id)})
+
+        if result.deleted_count == 0:
+            return jsonify({'error': 'Customer not found'}), 404
+
+        return jsonify({'message': 'Customer deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/health')
 def health_check():
     """Health check endpoint for Render"""
@@ -590,6 +798,7 @@ def health_check():
         'timestamp': datetime.now().isoformat(),
         'database': 'connected' if hasattr(db, 'command') else 'dummy'
     })
+
 
 if __name__ == '__main__':
     print("=== Pharmacy Management System ===")

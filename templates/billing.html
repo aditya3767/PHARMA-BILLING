@@ -1053,6 +1053,92 @@
             font-size: 14px;
         }
 
+        /* Add Customer Button Styles */
+        .add-customer-btn {
+            background: var(--success);
+            color: var(--white);
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 15px;
+            box-shadow: 0 4px 12px rgba(15, 157, 88, 0.3);
+        }
+
+        .add-customer-btn:hover {
+            background: #0c8044;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(15, 157, 88, 0.4);
+        }
+
+        /* Add Customer Modal Styles */
+        .add-customer-modal {
+            display: none;
+            position: fixed;
+            z-index: 1106;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+        }
+
+        .add-customer-modal-content {
+            background-color: var(--white);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--box-shadow);
+            animation: slideIn 0.3s ease;
+        }
+
+        .add-customer-form {
+            margin-top: 20px;
+        }
+
+        .add-customer-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .add-customer-form .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 14px;
+        }
+
+        .add-customer-form .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--light-gray);
+            border-radius: 10px;
+            font-size: 16px;
+            transition: var(--transition);
+            background: var(--light);
+        }
+
+        .add-customer-form .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
+            outline: none;
+            background: var(--white);
+        }
+
+        .add-customer-form .form-control.uppercase {
+            text-transform: uppercase;
+        }
+
         /* Animations */
         @keyframes fadeIn {
             from { opacity: 0; }
@@ -1132,6 +1218,9 @@
             .modal-content {
                 width: 90%;
             }
+            .add-customer-modal-content {
+                width: 90%;
+            }
             .total-card {
                 width: 100%;
             }
@@ -1159,11 +1248,20 @@
                 width: 95%;
                 padding: 20px;
             }
+            .add-customer-modal-content {
+                width: 95%;
+                padding: 20px;
+            }
             .stats-modal-content {
                 width: 95%;
             }
             .pricing-field {
                 flex-direction: column;
+            }
+            .add-customer-btn {
+                margin-left: 0;
+                margin-top: 10px;
+                width: 100%;
             }
         }
     </style>
@@ -1219,6 +1317,9 @@
                 <div class="card">
                     <div class="card-header">
                         <h2 class="card-title"><i class="fas fa-user-circle"></i> Customer Details</h2>
+                        <button class="add-customer-btn" onclick="openAddCustomerModal()">
+                            <i class="fas fa-user-plus"></i> Add Customer
+                        </button>
                     </div>
                     <div class="customer-details">
                         <div class="customer-row">
@@ -1485,6 +1586,48 @@
         </div>
     </div>
 
+    <!-- Add Customer Modal -->
+    <div id="addCustomerModal" class="add-customer-modal">
+        <div class="add-customer-modal-content">
+            <span class="close" onclick="closeAddCustomerModal()">&times;</span>
+            <h2><i class="fas fa-user-plus"></i> Add New Customer</h2>
+            <div class="add-customer-form">
+                <div class="form-group">
+                    <label for="newCustomerName">Customer Name *</label>
+                    <input type="text" id="newCustomerName" class="form-control uppercase"
+                           placeholder="ENTER CUSTOMER NAME" required>
+                </div>
+                <div class="form-group">
+                    <label for="newCustomerAddress">Address</label>
+                    <input type="text" id="newCustomerAddress" class="form-control"
+                           placeholder="ENTER ADDRESS">
+                </div>
+                <div class="form-group">
+                    <label for="newCustomerPhone">Phone No.</label>
+                    <input type="text" id="newCustomerPhone" class="form-control"
+                           placeholder="ENTER PHONE NUMBER">
+                </div>
+                <div class="form-group">
+                    <label for="newCustomerGst">GSTIN No.</label>
+                    <input type="text" id="newCustomerGst" class="form-control uppercase"
+                           placeholder="Enter GSTIN No." oninput="this.value = this.value.toUpperCase()">
+                </div>
+                <div class="form-group">
+                    <label for="newCustomerPan">PAN No.</label>
+                    <input type="text" id="newCustomerPan" class="form-control uppercase"
+                           placeholder="Enter PAN No." oninput="this.value = this.value.toUpperCase()">
+                </div>
+                <div style="margin-top: 30px; display: flex; gap: 15px; justify-content: flex-end;">
+                    <button class="btn" style="background: var(--gray); color: white;"
+                            onclick="closeAddCustomerModal()">Cancel</button>
+                    <button class="btn btn-success" onclick="saveNewCustomer()">
+                        <i class="fas fa-save"></i> Save Customer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Initialize jsPDF
         window.jsPDF = window.jspdf.jsPDF;
@@ -1535,6 +1678,9 @@
 
         ];
 
+        // Customers from database
+        let customersFromDB = [];
+
         // Format date to MM-YYYY
         function formatExpiryDate(dateString) {
             if (!dateString) return 'N/A';
@@ -1549,6 +1695,9 @@
             // Fetch medicines and notifications from the backend
             await fetchMedicines();
             await fetchNotifications();
+
+            // Fetch customers from database
+            await fetchCustomersFromDB();
 
             // Set today's date as default
             const today = new Date().toISOString().split('T')[0];
@@ -1594,7 +1743,25 @@
                 if (!event.target.matches('#customerName') && !event.target.closest('.customer-dropdown')) {
                     document.getElementById('customerDropdown').classList.remove('active');
                 }
+
+                // Close add customer modal when clicking outside
+                if (event.target.classList.contains('add-customer-modal')) {
+                    closeAddCustomerModal();
+                }
             });
+        }
+
+        // Fetch customers from database
+        async function fetchCustomersFromDB() {
+            try {
+                const response = await fetch('/api/customers');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch customers');
+                }
+                customersFromDB = await response.json();
+            } catch (error) {
+                console.error('Error fetching customers:', error);
+            }
         }
 
         // Filter and show customer dropdown
@@ -1603,8 +1770,11 @@
             const customerDropdown = document.getElementById('customerDropdown');
             customerDropdown.innerHTML = '';
 
+            // Combine hardcoded customers and database customers
+            const allCustomers = [...customers, ...customersFromDB];
+
             // Filter customers based on search term
-            const filteredCustomers = customers.filter(customer =>
+            const filteredCustomers = allCustomers.filter(customer =>
                 customer.name.toLowerCase().includes(searchTerm)
             );
 
@@ -1613,8 +1783,13 @@
                 filteredCustomers.forEach(customer => {
                     const option = document.createElement('div');
                     option.className = 'customer-option';
-                    option.textContent = customer.name;
-                    option.onclick = () => selectCustomer(customer.name, customer.address, customer.phone);
+                    option.innerHTML = `
+                        <div><strong>${customer.name}</strong></div>
+                        <div style="font-size: 12px; color: var(--gray);">
+                            ${customer.address || ''} | ${customer.phone || ''}
+                        </div>
+                    `;
+                    option.onclick = () => selectCustomer(customer.name, customer.address || '', customer.phone || '');
                     customerDropdown.appendChild(option);
                 });
                 customerDropdown.classList.add('active');
@@ -1626,8 +1801,8 @@
         // Select customer from dropdown
         function selectCustomer(name, address, phone) {
             document.getElementById('customerName').value = name;
-            document.getElementById('customerAddress').value = address;
-            document.getElementById('customerPhone').value = phone;
+            document.getElementById('customerAddress').value = address || '';
+            document.getElementById('customerPhone').value = phone || '';
             document.getElementById('customerDropdown').classList.remove('active');
             customerSelected = true;
         }
@@ -2588,6 +2763,105 @@
             }
         }
 
+        // Open Add Customer Modal
+        function openAddCustomerModal() {
+            // Clear form fields
+            document.getElementById('newCustomerName').value = '';
+            document.getElementById('newCustomerAddress').value = '';
+            document.getElementById('newCustomerPhone').value = '';
+            document.getElementById('newCustomerGst').value = '';
+            document.getElementById('newCustomerPan').value = '';
+
+            // Show modal
+            document.getElementById('addCustomerModal').style.display = 'block';
+        }
+
+        // Close Add Customer Modal
+        function closeAddCustomerModal() {
+            document.getElementById('addCustomerModal').style.display = 'none';
+        }
+
+        // Save New Customer to Database
+      // Save New Customer to Database
+        async function saveNewCustomer() {
+            const name = document.getElementById('newCustomerName').value.trim();
+            const address = document.getElementById('newCustomerAddress').value.trim();
+            const phone = document.getElementById('newCustomerPhone').value.trim();
+            const gstNo = document.getElementById('newCustomerGst').value.trim().toUpperCase();
+            const panNo = document.getElementById('newCustomerPan').value.trim().toUpperCase();
+
+            // Validate required fields
+            if (!name) {
+                alert('Customer name is required');
+                return;
+            }
+
+            if (!address) {
+                alert('Customer address is required');
+                return;
+            }
+
+            if (!phone) {
+                alert('Customer phone number is required');
+                return;
+            }
+
+            // Validate phone format
+            if (!/^\d{10}$/.test(phone)) {
+                alert('Phone number must be exactly 10 digits');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/customers', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        address: address,
+                        phone: phone,
+                        gstNo: gstNo,
+                        panNo: panNo
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Add the new customer to local arrays
+                    const newCustomer = {
+                        name: name,
+                        address: address,
+                        phone: phone
+                    };
+
+                    customersFromDB.push(result.customer);
+
+                    // Auto-fill the form with the new customer
+                    document.getElementById('customerName').value = name;
+                    document.getElementById('customerAddress').value = address;
+                    document.getElementById('customerPhone').value = phone;
+                    document.getElementById('gstNo').value = gstNo;
+                    document.getElementById('panNo').value = panNo;
+
+                    // Show success message
+                    alert('Customer saved successfully!');
+
+                    // Close modal
+                    closeAddCustomerModal();
+
+                    // Refresh customer dropdown
+                    filterCustomerDropdown();
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Error saving customer:', error);
+                alert('Failed to save customer. Please try again.');
+            }
+        }
         // Close dropdowns when clicking outside
         window.onclick = function(event) {
             if (!event.target.matches('.category-btn')) {
@@ -2606,6 +2880,13 @@
                 event.target.style.display = 'none';
             }
         }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeAddCustomerModal();
+            }
+        });
     </script>
 </body>
 </html>
