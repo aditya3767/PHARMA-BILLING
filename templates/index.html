@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Registration Portal</title>
+    <title>Secure Login Portal</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -78,7 +78,7 @@
                         0 0 0 1px rgba(255, 255, 255, 0.1),
                         var(--neon-glow);
             width: 100%;
-            max-width: 540px;
+            max-width: 500px;
             overflow: hidden;
             position: relative;
             transform: translateZ(0);
@@ -113,7 +113,7 @@
 
         .header {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            padding: 32px 36px;
+            padding: 36px 40px;
             text-align: center;
             color: white;
             position: relative;
@@ -150,21 +150,14 @@
 
         .header h2 {
             font-weight: 700;
-            font-size: 28px;
+            font-size: 32px;
             letter-spacing: -0.025em;
             position: relative;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        .header p {
-            font-size: 15px;
-            opacity: 0.9;
-            margin-top: 8px;
-            position: relative;
-        }
-
         .form-container {
-            padding: 36px;
+            padding: 40px;
         }
 
         .form-group {
@@ -178,21 +171,21 @@
             font-weight: 500;
             color: white;
             text-align: left;
-            font-size: 15px;
+            font-size: 16px;
         }
 
-        .form-group input, .form-group select {
+        .form-group input {
             width: 100%;
-            padding: 16px 18px;
+            padding: 18px 20px;
             border: 1px solid var(--glass-border);
             border-radius: 12px;
-            font-size: 16px;
+            font-size: 17px;
             transition: all 0.3s ease;
             background: var(--glass-dark);
             color: white;
         }
 
-        .form-group input:focus, .form-group select:focus {
+        .form-group input:focus {
             border-color: var(--primary);
             outline: none;
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
@@ -232,87 +225,14 @@
             transform: translateY(-50%) scale(1.1);
         }
 
-        .gender-row {
-            display: flex;
-            gap: 14px;
-            margin-top: 10px;
-        }
-
-        .gender-option {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 14px 10px;
-            border: 2px solid var(--glass-border);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: var(--glass-dark);
-        }
-
-        .gender-option:hover {
-            border-color: var(--primary-light);
-            background: rgba(0, 0, 0, 0.4);
-            transform: translateY(-2px);
-        }
-
-        .gender-option.selected {
-            border-color: var(--primary);
-            background: rgba(79, 70, 229, 0.25);
-            box-shadow: 0 5px 15px rgba(79, 70, 229, 0.2);
-        }
-
-        .gender-option input[type="radio"] {
-            display: none;
-        }
-
-        .custom-radio {
-            width: 20px;
-            height: 20px;
-            border: 2px solid #d1d5db;
-            border-radius: 50%;
-            margin-right: 10px;
-            position: relative;
-            transition: border-color 0.2s;
-        }
-
-        .gender-option.selected .custom-radio {
-            border-color: var(--primary);
-        }
-
-        .custom-radio::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 10px;
-            height: 10px;
-            background-color: var(--primary);
-            border-radius: 50%;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .gender-option.selected .custom-radio::after {
-            opacity: 1;
-        }
-
-        .gender-label {
-            font-weight: 500;
-            color: white;
-            font-size: 15px;
-        }
-
         .btn {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
             border: none;
-            padding: 18px;
+            padding: 20px;
             border-radius: 12px;
             width: 100%;
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -345,41 +265,6 @@
             transform: translateY(0);
         }
 
-        .btn-secondary {
-            background: transparent;
-            color: var(--primary-light);
-            border: 1px solid var(--glass-border);
-            margin-top: 20px;
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.05);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-        }
-
-        .form-page {
-            display: none;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        .active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .form-footer {
-            text-align: center;
-            margin-top: 28px;
-            padding-top: 20px;
-            border-top: 1px solid var(--glass-border);
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 13px;
-        }
-
         .error-message {
             color: #f87171;
             font-size: 13px;
@@ -392,85 +277,8 @@
             box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3) !important;
         }
 
-        .input-success {
-            border-color: #10b981 !important;
-        }
-
-        .validation-icon {
-            position: absolute;
-            right: 45px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 14px;
-            display: none;
-        }
-
-        .valid .fa-check {
-            display: block;
-            color: #10b981;
-        }
-
-        .invalid .fa-times {
-            display: block;
-            color: #ef4444;
-        }
-
-        .password-strength {
-            margin-top: 6px;
-            font-size: 13px;
-        }
-
-        .strength-weak {
-            color: #ef4444;
-        }
-
-        .strength-medium {
-            color: #f59e0b;
-        }
-
-        .strength-strong {
-            color: #10b981;
-        }
-
-        .password-requirements {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 8px;
-            font-size: 13px;
-            display: none;
-        }
-
-        .requirement {
-            display: flex;
-            align-items: center;
-            margin-bottom: 4px;
-        }
-
-        .requirement i {
-            margin-right: 8px;
-            font-size: 12px;
-        }
-
-        .requirement.met {
-            color: #10b981;
-        }
-
-        .requirement.not-met {
-            color: #9ca3af;
-        }
-
         .login-response {
-            margin-top: 20px;
-            padding: 14px 18px;
-            border-radius: 12px;
-            display: none;
-            text-align: center;
-            font-size: 15px;
-        }
-
-        .register-response {
-            margin-top: 20px;
+            margin-bottom: 20px;
             padding: 14px 18px;
             border-radius: 12px;
             display: none;
@@ -496,20 +304,15 @@
             }
 
             .header {
-                padding: 28px 24px;
+                padding: 32px 28px;
             }
 
             .form-container {
-                padding: 28px 24px;
+                padding: 32px 28px;
             }
 
-            .gender-row {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .form-group input, .form-group select {
-                padding: 14px 16px;
+            .form-group input {
+                padding: 16px 18px;
             }
 
             .toggle-password {
@@ -522,205 +325,48 @@
 </head>
 <body>
     <div class="container">
-        <!-- Registration Form -->
         <div class="card">
-            <div class="form-page active" id="registerPage">
-                <div class="header">
-                    <h2>Create Your Account</h2>
-                </div>
-
-                <div class="form-container">
-                    <form id="registrationForm">
-                        <!-- ADDED: Registration specific response area -->
-                        <div id="registerResponse" class="register-response"></div>
-
-                        <div class="form-group">
-                            <label for="fullName">Full Name</label>
-                            <input type="text" id="fullName" name="fullName" placeholder="Enter your full name" required>
-                            <span class="validation-icon"><i class="fas fa-check"></i><i class="fas fa-times"></i></span>
-                            <div class="error-message" id="fullNameError">Full name must contain only letters and spaces</div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="age">Age</label>
-                            <input type="number" id="age" name="age" placeholder="Enter your age" min="15" max="80" required>
-                            <span class="validation-icon"><i class="fas fa-check"></i><i class="fas fa-times"></i></span>
-                            <div class="error-message" id="ageError">Age must be between 15 and 80</div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Gender</label>
-                            <div class="gender-row">
-                                <div class="gender-option" data-value="male">
-                                    <input type="radio" name="gender" value="male" id="male">
-                                    <span class="custom-radio"></span>
-                                    <span class="gender-label">Male</span>
-                                </div>
-                                <div class="gender-option" data-value="female">
-                                    <input type="radio" name="gender" value="female" id="female">
-                                    <span class="custom-radio"></span>
-                                    <span class="gender-label">Female</span>
-                                </div>
-                                <div class="gender-option" data-value="other">
-                                    <input type="radio" name="gender" value="other" id="other">
-                                    <span class="custom-radio"></span>
-                                    <span class="gender-label">Other</span>
-                                </div>
-                            </div>
-                            <input type="hidden" id="gender" name="gender" required>
-                            <div class="error-message" id="genderError">Please select your gender</div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="email">Email Address</label>
-                            <input type="email" id="email" name="email" placeholder="Enter your email" required>
-                            <span class="validation-icon"><i class="fas fa-check"></i><i class="fas fa-times"></i></span>
-                            <div class="error-message" id="emailError">Please enter a valid email address</div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="phone">Phone Number</label>
-                            <input type="tel" id="phone" name="phone" placeholder="Enter 10-digit phone number" required>
-                            <span class="validation-icon"><i class="fas fa-check"></i><i class="fas fa-times"></i></span>
-                            <div class="error-message" id="phoneError">Phone number must be exactly 10 digits</div>
-                        </div>
-                        <div class="form-group">
-                            <label for="password">Password</label>
-                            <div class="password-container">
-                                <input type="password" id="password" name="password" placeholder="Create a strong password" required>
-                                <span class="toggle-password" id="togglePassword">
-                                    <i class="fas fa-eye"></i>
-                                </span>
-                                <span class="validation-icon"><i class="fas fa-check"></i><i class="fas fa-times"></i></span>
-                            </div>
-                            <div class="password-strength" id="passwordStrength"></div>
-                            <div class="password-requirements" id="passwordRequirements">
-                                <div class="requirement not-met" id="lengthReq"><i class="fas fa-circle"></i> At least 8 characters</div>
-                                <div class="requirement not-met" id="uppercaseReq"><i class="fas fa-circle"></i> At least one uppercase letter</div>
-                                <div class="requirement not-met" id="lowercaseReq"><i class="fas fa-circle"></i> At least one lowercase letter</div>
-                                <div class="requirement not-met" id="numberReq"><i class="fas fa-circle"></i> At least one number</div>
-                                <div class="requirement not-met" id="specialReq"><i class="fas fa-circle"></i> At least one special character</div>
-                            </div>
-                            <div class="error-message" id="passwordError">Password does not meet requirements</div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="confirmPassword">Confirm Password</label>
-                            <div class="password-container">
-                                <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password" required>
-                                <span class="toggle-password" id="toggleConfirmPassword">
-                                    <i class="fas fa-eye"></i>
-                                </span>
-                                <span class="validation-icon"><i class="fas fa-check"></i><i class="fas fa-times"></i></span>
-                            </div>
-                            <div class="error-message" id="confirmPasswordError">Passwords do not match</div>
-                        </div>
-
-                        <button type="submit" class="btn" id="registerBtn">Register Now</button>
-                        <button type="button" class="btn btn-secondary" id="loginBtn">Already have an account? Login</button>
-
-                        <div class="form-footer">
-
-                        </div>
-                    </form>
-                </div>
+            <div class="header">
+                <h2>Welcome</h2>
             </div>
 
-            <!-- Login Form -->
-            <div class="form-page" id="loginPage">
-                <div class="header">
-                    <h2>Welcome</h2>
-                </div>
+            <div class="form-container">
+                <form id="loginForm">
+                    <div id="loginResponse" class="login-response"></div>
 
-                <div class="form-container">
-                    <form id="loginForm">
-                        <div id="loginResponse" class="login-response"></div>
+                    <div class="form-group">
+                        <label for="loginEmail">Email or Username</label>
+                        <input type="text" id="loginEmail" name="loginEmail" placeholder="Enter your email or username" required>
+                        <div class="error-message" id="loginEmailError">Please enter a valid email or username</div>
+                    </div>
 
-                        <div class="form-group">
-                            <label for="loginEmail">Email or Username</label>
-                            <input type="text" id="loginEmail" name="loginEmail" placeholder="Enter your email or username" required>
-                            <div class="error-message" id="loginEmailError">Please enter a valid email or username</div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <div class="password-container">
+                            <input type="password" id="loginPassword" name="loginPassword" placeholder="Enter your password" required>
+                            <span class="toggle-password" id="toggleLoginPassword">
+                                <i class="fas fa-eye"></i>
+                            </span>
                         </div>
+                        <div class="error-message" id="loginPasswordError">Please enter your password</div>
+                    </div>
 
-                        <div class="form-group">
-                            <label for="loginPassword">Password</label>
-                            <div class="password-container">
-                                <input type="password" id="loginPassword" name="loginPassword" placeholder="Enter your password" required>
-                                <span class="toggle-password" id="toggleLoginPassword">
-                                    <i class="fas fa-eye"></i>
-                                </span>
-                            </div>
-                            <div class="error-message" id="loginPasswordError">Please enter your password</div>
-                        </div>
-
-                        <button type="submit" class="btn">Login</button>
-                        <button type="button" class="btn btn-secondary" id="backToRegister">Create New Account</button>
-
-                        <div class="form-footer">
-                            <a href="#" style="color: var(--primary-light);">Forgot your password?</a>
-                        </div>
-                    </form>
-                </div>
+                    <button type="submit" class="btn">Login</button>
+                </form>
             </div>
         </div>
     </div>
 
     <script>
-        // Store user data
-        let userData = {};
-
-        // Validation patterns
-        const patterns = {
-            name: /^[a-zA-Z\s]{2,50}$/,
-            email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-            phone: /^\d{10}$/,
-            password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
-        };
-
-        // Initialize gender selection
-        document.querySelectorAll('.gender-option').forEach(option => {
-            option.addEventListener('click', function() {
-                document.querySelectorAll('.gender-option').forEach(opt => {
-                    opt.classList.remove('selected');
-                    opt.querySelector('input[type="radio"]').checked = false;
-                });
-                this.classList.add('selected');
-                const radio = this.querySelector('input[type="radio"]');
-                radio.checked = true;
-                document.getElementById('gender').value = this.getAttribute('data-value');
-                validateField('gender');
-            });
-        });
-
         // Toggle password visibility
-        function setupPasswordToggle(toggleId, inputId) {
-            const toggle = document.getElementById(toggleId);
-            const input = document.getElementById(inputId);
-            toggle.addEventListener('click', function() {
-                const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
-                input.setAttribute('type', type);
-                this.querySelector('i').classList.toggle('fa-eye');
-                this.querySelector('i').classList.toggle('fa-eye-slash');
-            });
-        }
+        const togglePassword = document.getElementById('toggleLoginPassword');
+        const passwordInput = document.getElementById('loginPassword');
 
-        setupPasswordToggle('togglePassword', 'password');
-        setupPasswordToggle('toggleConfirmPassword', 'confirmPassword');
-        setupPasswordToggle('toggleLoginPassword', 'loginPassword');
-
-        // Switch between login and register forms
-        document.getElementById('loginBtn').addEventListener('click', function() {
-            document.getElementById('registerPage').classList.remove('active');
-            document.getElementById('loginPage').classList.add('active');
-            clearLoginResponse();
-            clearRegisterResponse();
-        });
-
-        document.getElementById('backToRegister').addEventListener('click', function() {
-            document.getElementById('loginPage').classList.remove('active');
-            document.getElementById('registerPage').classList.add('active');
-            clearLoginResponse();
-            clearRegisterResponse();
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.querySelector('i').classList.toggle('fa-eye');
+            this.querySelector('i').classList.toggle('fa-eye-slash');
         });
 
         // Field validation functions
@@ -729,47 +375,6 @@
             const errorElement = document.getElementById(`${fieldName}Error`);
 
             switch(fieldName) {
-                case 'fullName':
-                    const fullName = document.getElementById('fullName').value.trim();
-                    isValid = patterns.name.test(fullName);
-                    break;
-
-                case 'age':
-                    const age = parseInt(document.getElementById('age').value);
-                    isValid = !isNaN(age) && age >= 15 && age <= 80;
-                    break;
-
-                case 'gender':
-                    const gender = document.getElementById('gender').value;
-                    isValid = gender !== '';
-                    break;
-
-                case 'email':
-                    const email = document.getElementById('email').value.trim();
-                    isValid = patterns.email.test(email);
-                    break;
-
-                case 'phone':
-                    const phone = document.getElementById('phone').value.replace(/\D/g, '');
-                    isValid = patterns.phone.test(phone);
-                    if (isValid) {
-                        document.getElementById('phone').value = phone;
-                    }
-                    break;
-
-                case 'password':
-                    const password = document.getElementById('password').value;
-                    isValid = patterns.password.test(password);
-                    updatePasswordStrength(password);
-                    updatePasswordRequirements(password);
-                    break;
-
-                case 'confirmPassword':
-                    const confirmPassword = document.getElementById('confirmPassword').value;
-                    const passwordValue = document.getElementById('password').value;
-                    isValid = confirmPassword === passwordValue && confirmPassword !== '';
-                    break;
-
                 case 'loginEmail':
                     const loginEmail = document.getElementById('loginEmail').value.trim();
                     isValid = loginEmail.length >= 2;
@@ -782,215 +387,32 @@
             }
 
             // Update UI based on validation
-            const inputElement = document.getElementById(fieldName) || document.getElementById('gender');
+            const inputElement = document.getElementById(fieldName);
             if (inputElement) {
                 const parentElement = inputElement.parentElement;
 
-                if (fieldName === 'password') {
-                    parentElement.classList.remove('valid', 'invalid');
-                } else {
-                    parentElement.classList.remove('valid', 'invalid');
-                }
-
                 if (isValid) {
                     errorElement.style.display = 'none';
-                    if (fieldName !== 'password' && fieldName !== 'gender') {
-                        parentElement.classList.add('valid');
-                        inputElement.classList.remove('input-error');
-                        inputElement.classList.add('input-success');
-                    }
+                    inputElement.classList.remove('input-error');
                 } else {
-                    if (fieldName !== 'gender') {
-                        errorElement.style.display = 'block';
-                        if (fieldName !== 'password') {
-                            parentElement.classList.add('invalid');
-                            inputElement.classList.add('input-error');
-                            inputElement.classList.remove('input-success');
-                        }
-                    } else {
-                        errorElement.style.display = 'block';
-                    }
+                    errorElement.style.display = 'block';
+                    inputElement.classList.add('input-error');
                 }
             }
 
             return isValid;
         }
 
-        // Password strength indicator
-        function updatePasswordStrength(password) {
-            const strengthElement = document.getElementById('passwordStrength');
-            let strength = 0;
-            let message = '';
-            let className = '';
-
-            if (password.length >= 8) strength++;
-            if (/[a-z]/.test(password)) strength++;
-            if (/[A-Z]/.test(password)) strength++;
-            if (/[0-9]/.test(password)) strength++;
-            if (/[@$!%*?&]/.test(password)) strength++;
-
-            switch(strength) {
-                case 0:
-                case 1:
-                case 2:
-                    message = 'Weak password';
-                    className = 'strength-weak';
-                    break;
-                case 3:
-                case 4:
-                    message = 'Medium strength password';
-                    className = 'strength-medium';
-                    break;
-                case 5:
-                    message = 'Strong password';
-                    className = 'strength-strong';
-                    break;
-            }
-
-            strengthElement.textContent = message;
-            strengthElement.className = `password-strength ${className}`;
-        }
-
-        // Update password requirements display
-        function updatePasswordRequirements(password) {
-            const requirements = document.getElementById('passwordRequirements');
-            requirements.style.display = 'block';
-
-            document.getElementById('lengthReq').className = password.length >= 8 ?
-                'requirement met' : 'requirement not-met';
-            document.getElementById('uppercaseReq').className = /[A-Z]/.test(password) ?
-                'requirement met' : 'requirement not-met';
-            document.getElementById('lowercaseReq').className = /[a-z]/.test(password) ?
-                'requirement met' : 'requirement not-met';
-            document.getElementById('numberReq').className = /[0-9]/.test(password) ?
-                'requirement met' : 'requirement not-met';
-            document.getElementById('specialReq').className = /[@$!%*?&]/.test(password) ?
-                'requirement met' : 'requirement not-met';
-        }
-
         // Real-time validation for form fields
-        document.getElementById('fullName').addEventListener('input', () => validateField('fullName'));
-        document.getElementById('age').addEventListener('input', () => validateField('age'));
-        document.getElementById('email').addEventListener('input', () => validateField('email'));
-        document.getElementById('phone').addEventListener('input', () => {
-            const phone = document.getElementById('phone').value.replace(/\D/g, '');
-            document.getElementById('phone').value = phone;
-            validateField('phone');
-        });
-        document.getElementById('password').addEventListener('input', () => {
-            validateField('password');
-            if (document.getElementById('confirmPassword').value) {
-                validateField('confirmPassword');
-            }
-        });
-        document.getElementById('confirmPassword').addEventListener('input', () => validateField('confirmPassword'));
-        document.getElementById('loginEmail').addEventListener('input', () => validateField('loginEmail'));
-        document.getElementById('loginPassword').addEventListener('input', () => validateField('loginPassword'));
-
-        // Form validation for registration
-        document.getElementById('registrationForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            // Clear previous responses
-            clearRegisterResponse();
-
-            // Validate all fields
-            const fields = ['fullName', 'age', 'gender', 'email', 'phone', 'password', 'confirmPassword'];
-            let isValid = true;
-
-            fields.forEach(field => {
-                if (!validateField(field)) {
-                    isValid = false;
-                    if (isValid === false) {
-                        const firstError = document.getElementById(`${field}Error`);
-                        if (firstError && firstError.style.display === 'block') {
-                            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }
-                    }
-                }
-            });
-
-            if (!isValid) {
-                showRegisterResponse('Please fix the errors in the form before submitting.', 'error');
-                return;
-            }
-
-            // Store user data
-            userData = {
-                fullName: document.getElementById('fullName').value.trim(),
-                age: parseInt(document.getElementById('age').value),
-                gender: document.getElementById('gender').value,
-                email: document.getElementById('email').value.trim(),
-                phone: document.getElementById('phone').value,
-                password: document.getElementById('password').value
-            };
-
-            try {
-                // Show loading state
-                const registerBtn = document.getElementById('registerBtn');
-                const originalText = registerBtn.textContent;
-                registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
-                registerBtn.disabled = true;
-
-                const response = await fetch('/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ user_data: userData })
-                });
-
-                const data = await response.json();
-
-                // Restore button state
-                registerBtn.innerHTML = originalText;
-                registerBtn.disabled = false;
-
-                if (response.ok) {
-                    // Registration successful - show login page
-                    showRegisterResponse('Registration successful! You can now login.', 'success');
-                    document.getElementById('registerPage').classList.remove('active');
-                    document.getElementById('loginPage').classList.add('active');
-                    document.getElementById('loginEmail').value = userData.email;
-                    // Reset the registration form
-                    document.getElementById('registrationForm').reset();
-                } else {
-                    // Show specific error message for existing user
-                    showRegisterResponse(data.error, 'error');
-
-                    // Highlight the email field if user already exists
-                    if (data.error.includes('already registered') || data.error.includes('already exists')) {
-                        document.getElementById('email').classList.add('input-error');
-                    }
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                const registerBtn = document.getElementById('registerBtn');
-                registerBtn.innerHTML = 'Register Now';
-                registerBtn.disabled = false;
-                showRegisterResponse('Registration failed. Please try again.', 'error');
-            }
+        document.getElementById('loginEmail').addEventListener('input', () => {
+            validateField('loginEmail');
+            this.classList.remove('input-error');
         });
 
-        // Clear register response function
-        function clearRegisterResponse() {
-            const registerResponse = document.getElementById('registerResponse');
-            registerResponse.style.display = 'none';
-            registerResponse.textContent = '';
-            registerResponse.className = 'register-response';
-        }
-
-        // Show register response function
-        function showRegisterResponse(message, type) {
-            const registerResponse = document.getElementById('registerResponse');
-            registerResponse.textContent = message;
-            registerResponse.className = `register-response ${type}`;
-            registerResponse.style.display = 'block';
-            registerResponse.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => {
-                registerResponse.style.display = 'none';
-            }, 5000);
-        }
+        document.getElementById('loginPassword').addEventListener('input', () => {
+            validateField('loginPassword');
+            this.classList.remove('input-error');
+        });
 
         // Clear login response function
         function clearLoginResponse() {
@@ -1077,8 +499,15 @@
             this.classList.remove('input-error');
         });
 
-        document.getElementById('email').addEventListener('input', function() {
-            this.classList.remove('input-error');
+        // Add Enter key support for form submission
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const loginForm = document.getElementById('loginForm');
+                if (loginForm) {
+                    const submitEvent = new Event('submit', { cancelable: true });
+                    loginForm.dispatchEvent(submitEvent);
+                }
+            }
         });
     </script>
 </body>

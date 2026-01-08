@@ -23,7 +23,6 @@ try:
     username = os.environ.get('MONGODB_USERNAME', 'adityabhoir983_db_user')
     password = os.environ.get('MONGODB_PASSWORD', 'HiV2rwczhpH0Cpjq')
     encoded_password = urllib.parse.quote_plus(password)
-
     connection_string = f"mongodb+srv://{username}:{encoded_password}@cluster0.aavnxbi.mongodb.net/pharmacy_db?retryWrites=true&w=majority&appName=Cluster0"
 
     client = MongoClient(
@@ -118,6 +117,8 @@ if hasattr(db, 'command'):  # Check if it's real MongoDB
         customers_collection.create_index("phone")
         customers_collection.create_index("gstNo")
         customers_collection.create_index("panNo")
+        bills_collection.create_index("invoice_no")
+        bills_collection.create_index("date")
         print("Database indexes created")
     except Exception as e:
         print(f"Could not create indexes: {e}")
@@ -221,6 +222,7 @@ def validate_password(password):
     """Validate password strength"""
     if not password or not isinstance(password, str):
         return False, "Password is required"
+
     if len(password) < 8:
         return False, "Password must be at least 8 characters long"
     if not re.search(r'[A-Z]', password):
@@ -231,43 +233,8 @@ def validate_password(password):
         return False, "Password must contain at least one number"
     if not re.search(r'[@$!%*?&]', password):
         return False, "Password must contain at least one special character (@$!%*?&)"
+
     return True, "Password is strong"
-
-
-def validate_user_data(user_data):
-    """Comprehensive user data validation"""
-    errors = []
-
-    if not user_data:
-        return ["No user data provided"]
-
-    # Validate full name
-    if not validate_name(user_data.get('fullName')):
-        errors.append("Full name must contain only letters and spaces (2-50 characters)")
-
-    # Validate age
-    if not validate_age(user_data.get('age')):
-        errors.append("Age must be a number between 15 and 80")
-
-    # Validate gender
-    gender = user_data.get('gender')
-    if not gender or gender not in ['male', 'female', 'other']:
-        errors.append("Please select a valid gender")
-
-    # Validate email
-    if not validate_email(user_data.get('email')):
-        errors.append("Please enter a valid email address")
-
-    # Validate phone
-    if not validate_phone(user_data.get('phone')):
-        errors.append("Phone number must be exactly 10 digits")
-
-    # Validate password
-    is_valid_password, password_error = validate_password(user_data.get('password'))
-    if not is_valid_password:
-        errors.append(password_error)
-
-    return errors
 
 
 # Customer validation functions
@@ -344,66 +311,6 @@ def invoice_pdf():
     return render_template('invoice_pdf.html', bill_data=bill_data)
 
 
-@app.route('/register', methods=['POST'])
-def register():
-    try:
-        data = request.get_json()
-        user_data = data.get('user_data')
-
-        if not user_data:
-            return jsonify({'error': 'No user data provided'}), 400
-
-        # Comprehensive user data validation
-        validation_errors = validate_user_data(user_data)
-        if validation_errors:
-            return jsonify({'error': ' | '.join(validation_errors)}), 400
-
-        # Generate username from email
-        username = user_data['email'].split('@')[0]
-
-        # Check if user already exists - Enhanced check with better error message
-        existing_user = users_collection.find_one({'email': user_data['email'].strip().lower()})
-        if existing_user:
-            return jsonify({
-                               'error': 'This email is already registered. Please use a different email address or login with your existing account.'}), 400
-
-        # Also check if username already exists
-        existing_username = users_collection.find_one({'username': username})
-        if existing_username:
-            return jsonify({'error': 'Username already exists. Please try a different email address.'}), 400
-
-        # Data sanitization before storing
-        sanitized_user_data = {
-            'fullName': user_data['fullName'].strip(),
-            'age': int(user_data['age']),
-            'gender': user_data['gender'],
-            'phone': re.sub(r'\D', '', user_data['phone']),  # Clean phone number
-            'password': user_data['password'],  # Store plaintext password
-            'username': username,
-            'email': user_data['email'].strip().lower(),
-            'verified': True,
-            'registration_date': datetime.now().isoformat()
-        }
-
-        # Store user in MongoDB
-        user_doc = {
-            'fullName': sanitized_user_data['fullName'],
-            'age': sanitized_user_data['age'],
-            'gender': sanitized_user_data['gender'],
-            'phone': sanitized_user_data['phone'],
-            'password': sanitized_user_data['password'],
-            'username': sanitized_user_data['username'],
-            'email': sanitized_user_data['email'],
-            'verified': True,
-            'registration_date': datetime.now().isoformat()
-        }
-        users_collection.insert_one(user_doc)
-
-        return jsonify({'message': 'Registration successful! You can now login.'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
 @app.route('/login', methods=['POST'])
 def login():
     try:
@@ -469,6 +376,7 @@ def save_bill_data():
 def save_bill():
     try:
         data = request.get_json()
+
         # Ensure invoice_no is unique (simple check, in production use better method)
         existing = bills_collection.find_one({'invoice_no': data['invoice_no']})
         if existing:
@@ -483,12 +391,63 @@ def save_bill():
         return jsonify({'error': str(e)}), 500
 
 
+# ========== UPDATED BILLS ENDPOINTS WITH MONTH/YEAR FILTER ==========
 @app.route('/api/bills', methods=['GET'])
 @login_required
 def get_bills():
     try:
-        bills = list(bills_collection.find({}, {'_id': 0}).sort('date', -1))
+        # Get filter parameters
+        time_filter = request.args.get('time_filter', 'all')
+        custom_date = request.args.get('custom_date', '')
+        month = request.args.get('month', '')
+        year = request.args.get('year', '')
+        limit = int(request.args.get('limit', 1000))
+
+        # Build query based on filters
+        query = {}
+
+        if time_filter == 'today':
+            today = datetime.now().strftime('%Y-%m-%d')
+            query['date'] = today
+        elif time_filter == 'yesterday':
+            yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+            query['date'] = yesterday
+        elif time_filter == 'this_week':
+            today = datetime.now()
+            start_of_week = today - timedelta(days=today.weekday())
+            query['date'] = {'$gte': start_of_week.strftime('%Y-%m-%d')}
+        elif time_filter == 'this_month':
+            today = datetime.now()
+            month_start = today.replace(day=1)
+            query['date'] = {'$gte': month_start.strftime('%Y-%m-%d')}
+        elif time_filter == 'last_month':
+            today = datetime.now()
+            first_day_this_month = today.replace(day=1)
+            last_day_last_month = first_day_this_month - timedelta(days=1)
+            first_day_last_month = last_day_last_month.replace(day=1)
+            query['date'] = {
+                '$gte': first_day_last_month.strftime('%Y-%m-%d'),
+                '$lte': last_day_last_month.strftime('%Y-%m-%d')
+            }
+        elif time_filter == 'this_year':
+            today = datetime.now()
+            year_start = today.replace(month=1, day=1)
+            query['date'] = {'$gte': year_start.strftime('%Y-%m-%d')}
+        elif time_filter == 'custom' and custom_date:
+            query['date'] = custom_date
+        elif time_filter == 'monthly' and month:
+            query['date'] = {'$regex': f'^{month}'}
+        elif time_filter == 'yearly' and year:
+            query['date'] = {'$regex': f'^{year}'}
+        elif time_filter == 'month_year':
+            # New filter for month and year selection
+            if month and year:
+                query['date'] = {'$regex': f'^{year}-{month}'}
+
+        # Get bills with optimized query
+        bills = list(bills_collection.find(query, {'_id': 0}).sort('date', -1).limit(limit))
         return jsonify(bills), 200
+
     except Exception as e:
         print(f"Error fetching bills: {e}")
         return jsonify({'error': str(e)}), 500
@@ -504,6 +463,30 @@ def get_bill(invoice_no):
         return jsonify({'error': 'Bill not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# ========== DELETE BILL ENDPOINT ==========
+@app.route('/api/bill/<invoice_no>', methods=['DELETE'])
+@login_required
+def delete_bill(invoice_no):
+    try:
+        result = bills_collection.delete_one({'invoice_no': int(invoice_no)})
+        if result.deleted_count > 0:
+            return jsonify({
+                'success': True,
+                'message': f'Bill {invoice_no} deleted successfully'
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Bill not found'
+            }), 404
+    except Exception as e:
+        print(f"Error deleting bill: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 @app.route('/save_invoice_pdf', methods=['POST'])
@@ -555,12 +538,15 @@ def get_medicines():
 
         # Apply filters
         filtered_medicines = medicines
+
         if search_term:
             filtered_medicines = [m for m in filtered_medicines if search_term.lower() in m['name'].lower()]
+
         if category_filter != 'all':
             filtered_medicines = [m for m in filtered_medicines if m['category'] == category_filter]
 
         return jsonify(filtered_medicines), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -653,6 +639,7 @@ def get_notifications():
         notifications.sort(key=lambda x: priority_order[x['priority']])
 
         return jsonify(notifications), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -682,6 +669,7 @@ def get_customers():
             customer['_id'] = str(customer['_id'])
 
         return jsonify(customers), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -692,7 +680,6 @@ def add_customer():
     """Add a new customer to the database"""
     try:
         data = request.get_json()
-
         if not data:
             return jsonify({'error': 'No customer data provided'}), 400
 
@@ -728,11 +715,11 @@ def add_customer():
 
         # Return the created customer with ID
         customer_doc['_id'] = str(result.inserted_id)
-
         return jsonify({
             'message': 'Customer added successfully',
             'customer': customer_doc
         }), 201
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -743,7 +730,6 @@ def update_customer(customer_id):
     """Update an existing customer"""
     try:
         data = request.get_json()
-
         if not data:
             return jsonify({'error': 'No customer data provided'}), 400
 
@@ -771,6 +757,7 @@ def update_customer(customer_id):
             return jsonify({'error': 'Customer not found'}), 404
 
         return jsonify({'message': 'Customer updated successfully'}), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -781,10 +768,8 @@ def delete_customer(customer_id):
     """Delete a customer"""
     try:
         result = customers_collection.delete_one({'_id': ObjectId(customer_id)})
-
         if result.deleted_count == 0:
             return jsonify({'error': 'Customer not found'}), 404
-
         return jsonify({'message': 'Customer deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
