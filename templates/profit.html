@@ -1942,22 +1942,23 @@
             document.getElementById('profitContent').style.display = 'block';
         }
 
-        // Menu selection function
+// Add this to both reports.html and profit.html
         function selectMenu(menu) {
             const menuItems = document.querySelectorAll('.menu-item');
             menuItems.forEach(item => item.classList.remove('active'));
             event.currentTarget.classList.add('active');
 
             if (menu === 'inventory') {
-                showStatsModal();
+                // Navigate to billing page with hash to show inventory modal
+                window.location.href = '/billing#show-inventory';
+            } else if (menu === 'dashboard') {
+                window.location.href = '/billing';
             } else if (menu === 'reports') {
                 window.location.href = '/reports';
             } else if (menu === 'profit') {
                 window.location.href = '/profit';
             } else if (menu === 'logout') {
                 window.location.href = '/logout';
-            } else if (menu === 'dashboard') {
-                window.location.href = '/billing';
             }
         }
 

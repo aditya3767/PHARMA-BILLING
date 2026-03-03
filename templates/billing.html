@@ -944,61 +944,148 @@
             font-weight: bold;
         }
 
-        /* Stats Modal */
+        /* Stats Modal - Enhanced Styles */
         .stats-modal {
             display: none;
             position: fixed;
-            z-index: 1105;
+            z-index: 2000;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
+            background-color: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
         }
 
         .stats-modal-content {
             background-color: var(--white);
-            margin: 5% auto;
+            margin: 3% auto;
             padding: 30px;
             border-radius: var(--border-radius);
-            width: 600px;
-            max-height: 80vh;
+            width: 90%;
+            max-width: 700px;
+            max-height: 90vh;
             overflow-y: auto;
             box-shadow: var(--box-shadow);
             animation: slideIn 0.3s ease;
+            position: relative;
+        }
+
+        .stats-modal .close {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            color: var(--gray);
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: var(--transition);
+            z-index: 10;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: var(--light);
+            float: none;
+        }
+
+        .stats-modal .close:hover {
+            color: var(--danger);
+            background: var(--light-gray);
+            transform: rotate(90deg);
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 20px;
-            margin-top: 20px;
+            margin: 25px 0;
         }
 
         .stat-card {
-            background: var(--light);
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--white) 100%);
             border-radius: var(--border-radius);
-            padding: 20px;
+            padding: 25px 20px;
             text-align: center;
             transition: var(--transition);
+            border: 1px solid var(--primary-light);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
 
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: var(--box-shadow);
+            box-shadow: 0 8px 25px rgba(26, 115, 232, 0.2);
+            border-color: var(--primary);
         }
 
         .stat-value {
-            font-size: 32px;
+            font-size: 36px;
             font-weight: 800;
             color: var(--primary);
-            margin: 10px 0;
+            margin: 10px 0 5px;
+            line-height: 1.2;
         }
 
         .stat-label {
             font-size: 14px;
             color: var(--gray);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .category-stats-container {
+            margin-top: 30px;
+            background: var(--light);
+            border-radius: var(--border-radius);
+            padding: 20px;
+        }
+
+        .category-stats-container h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .category-stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--light-gray);
+            transition: var(--transition);
+        }
+
+        .category-stat-item:hover {
+            background: var(--white);
+            transform: translateX(5px);
+        }
+
+        .category-stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .category-name {
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .category-count {
+            background: var(--primary);
+            color: var(--white);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
             font-weight: 600;
         }
 
@@ -1231,6 +1318,11 @@
             .stats-grid {
                 grid-template-columns: 1fr;
             }
+            .stats-modal-content {
+                width: 95%;
+                margin: 5% auto;
+                padding: 20px;
+            }
         }
 
         @media (max-width: 768px) {
@@ -1262,6 +1354,16 @@
                 margin-left: 0;
                 margin-top: 10px;
                 width: 100%;
+            }
+            .stats-modal .close {
+                right: 15px;
+                top: 15px;
+                width: 35px;
+                height: 35px;
+                font-size: 24px;
+            }
+            .stat-value {
+                font-size: 28px;
             }
         }
     </style>
@@ -1478,30 +1580,33 @@
     <div id="statsModal" class="stats-modal">
         <div class="stats-modal-content">
             <span class="close" onclick="closeStatsModal()">&times;</span>
-            <h2><i class="fas fa-chart-bar"></i> Medicine Inventory Statistics</h2>
+            <h2 style="color: var(--primary); margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-chart-bar"></i> Inventory Statistics
+            </h2>
             <div class="stats-grid">
                 <div class="stat-card">
+                    <i class="fas fa-pills" style="font-size: 24px; color: var(--primary);"></i>
                     <div class="stat-value" id="totalMedicines">0</div>
                     <div class="stat-label">Total Medicines</div>
                 </div>
                 <div class="stat-card">
+                    <i class="fas fa-boxes" style="font-size: 24px; color: var(--success);"></i>
                     <div class="stat-value" id="totalVariants">0</div>
                     <div class="stat-label">Total Variants</div>
                 </div>
                 <div class="stat-card">
+                    <i class="fas fa-cubes" style="font-size: 24px; color: var(--info);"></i>
                     <div class="stat-value" id="totalStock">0</div>
                     <div class="stat-label">Total Stock</div>
                 </div>
                 <div class="stat-card">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 24px; color: var(--warning);"></i>
                     <div class="stat-value" id="expiringSoon">0</div>
                     <div class="stat-label">Expiring Soon</div>
                 </div>
             </div>
-            <div style="margin-top: 30px;">
-                <h3>Medicine Categories</h3>
-                <div id="categoryStats">
-                    <!-- Category stats will be populated here -->
-                </div>
+            <div class="category-stats-container" id="categoryStats">
+                <!-- Category stats will be populated here -->
             </div>
         </div>
     </div>
@@ -1692,6 +1797,15 @@
 
         // Initialize the application
         async function initializeApp() {
+            // Check URL hash to show inventory modal
+            if (window.location.hash === '#show-inventory') {
+                setTimeout(() => {
+                    showStatsModal();
+                    // Remove hash from URL
+                    history.replaceState(null, null, ' ');
+                }, 500);
+            }
+
             // Fetch medicines and notifications from the backend
             await fetchMedicines();
             await fetchNotifications();
@@ -1850,8 +1964,16 @@
             menuItems.forEach(item => item.classList.remove('active'));
             event.currentTarget.classList.add('active');
 
-            if (menu === 'inventory') {
-                showStatsModal();
+            if (menu === 'dashboard') {
+                window.location.href = '/billing';
+            } else if (menu === 'inventory') {
+                // Check if we're on billing page
+                if (window.location.pathname === '/billing') {
+                    showStatsModal(); // Show inventory modal on billing page
+                } else {
+                    // Navigate to billing page and show inventory modal after load
+                    window.location.href = '/billing#show-inventory';
+                }
             } else if (menu === 'reports') {
                 window.location.href = '/reports';
             } else if (menu === 'profit') {
@@ -1903,24 +2025,38 @@
                 categoryStats[medicine.category]++;
             });
 
-            // Display category stats
+            // Display category stats with improved styling
             const categoryStatsContainer = document.getElementById('categoryStats');
             categoryStatsContainer.innerHTML = '';
 
+            // Add category header
+            categoryStatsContainer.innerHTML = '<h3><i class="fas fa-chart-pie"></i> Category Distribution</h3>';
+
             for (const category in categoryStats) {
                 const statRow = document.createElement('div');
-                statRow.style.display = 'flex';
-                statRow.style.justifyContent = 'space-between';
-                statRow.style.padding = '10px 0';
-                statRow.style.borderBottom = '1px solid #eee';
+                statRow.className = 'category-stat-item';
 
                 statRow.innerHTML = `
-                    <div>${category}</div>
-                    <div><strong>${categoryStats[category]}</strong> medicines</div>
+                    <div class="category-name">
+                        <i class="fas fa-tag" style="color: var(--primary);"></i>
+                        ${category}
+                    </div>
+                    <div class="category-count">${categoryStats[category]}</div>
                 `;
 
                 categoryStatsContainer.appendChild(statRow);
             }
+
+            // Add total count
+            const totalRow = document.createElement('div');
+            totalRow.className = 'category-stat-item';
+            totalRow.style.background = 'var(--primary-light)';
+            totalRow.style.fontWeight = 'bold';
+            totalRow.innerHTML = `
+                <div class="category-name">Total Categories</div>
+                <div class="category-count">${Object.keys(categoryStats).length}</div>
+            `;
+            categoryStatsContainer.appendChild(totalRow);
 
             // Show modal
             document.getElementById('statsModal').style.display = 'block';
@@ -2782,7 +2918,6 @@
         }
 
         // Save New Customer to Database
-      // Save New Customer to Database
         async function saveNewCustomer() {
             const name = document.getElementById('newCustomerName').value.trim();
             const address = document.getElementById('newCustomerAddress').value.trim();
@@ -2862,6 +2997,7 @@
                 alert('Failed to save customer. Please try again.');
             }
         }
+
         // Close dropdowns when clicking outside
         window.onclick = function(event) {
             if (!event.target.matches('.category-btn')) {
@@ -2879,12 +3015,22 @@
             if (event.target.classList.contains('modal')) {
                 event.target.style.display = 'none';
             }
+
+            // Close stats modal when clicking outside
+            if (event.target.classList.contains('stats-modal')) {
+                closeStatsModal();
+            }
         }
 
         // Close modal on escape key
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
                 closeAddCustomerModal();
+                closeStatsModal();
+                closeMedicineModal();
+                closeVariantModal();
+                closeCategoryModal();
+                closeSizeModal();
             }
         });
     </script>

@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for, session
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session, make_response, \
+    after_this_request
 from pymongo import MongoClient
 import random
 from datetime import datetime, timedelta
@@ -170,13 +171,19 @@ def sync_default_medicines():
 sync_default_medicines()
 
 
-# Login required decorator
+# Login required decorator with cache prevention
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
             return redirect(url_for('index'))
-        return f(*args, **kwargs)
+
+        response = make_response(f(*args, **kwargs))
+        # Add headers to prevent caching of authenticated pages
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
 
     return decorated_function
 
@@ -271,27 +278,131 @@ def validate_customer_data(customer_data):
     return errors
 
 
+# Inject logout confirmation JavaScript into all pages
+def inject_logout_confirmation(html_content):
+    """Inject JavaScript to handle logout confirmation"""
+    logout_script = """
+    <script>
+    // Override the original selectMenu function to add logout confirmation
+    (function() {
+        // Store the original function if it exists
+        var originalSelectMenu = window.selectMenu;
+
+        // Override selectMenu function
+        window.selectMenu = function(menu) {
+            if (menu === 'logout') {
+                // Show confirmation dialog
+                if (confirm('Are you sure you want to logout?')) {
+                    // Clear session storage and redirect to logout
+                    sessionStorage.clear();
+                    window.location.href = '/logout';
+                }
+            } else if (originalSelectMenu) {
+                // Call original function for other menu items
+                originalSelectMenu(menu);
+            } else {
+                // Fallback if original function doesn't exist
+                const menuItems = document.querySelectorAll('.menu-item');
+                menuItems.forEach(item => item.classList.remove('active'));
+                if (event) event.currentTarget.classList.add('active');
+
+                if (menu === 'dashboard') {
+                    window.location.href = '/billing';
+                } else if (menu === 'inventory') {
+                    if (window.location.pathname === '/billing' && window.showStatsModal) {
+                        window.showStatsModal();
+                    } else {
+                        window.location.href = '/billing#show-inventory';
+                    }
+                } else if (menu === 'reports') {
+                    window.location.href = '/reports';
+                } else if (menu === 'profit') {
+                    window.location.href = '/profit';
+                }
+            }
+        };
+
+        // Prevent back button after logout
+        (function() {
+            window.history.pushState(null, null, window.location.href);
+            window.addEventListener('popstate', function() {
+                window.history.pushState(null, null, window.location.href);
+            });
+        })();
+
+        // Check session periodically
+        function checkSession() {
+            fetch('/check-session')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.logged_in && window.location.pathname !== '/') {
+                        window.location.href = '/';
+                    }
+                })
+                .catch(error => console.error('Error checking session:', error));
+        }
+
+        // Check session every 30 seconds
+        setInterval(checkSession, 30000);
+    })();
+    </script>
+    """
+
+    # Insert the script before closing body tag
+    if '</body>' in html_content:
+        return html_content.replace('</body>', logout_script + '</body>')
+    return html_content + logout_script
+
+
 @app.route('/')
 def index():
-    return render_template('index.html')
+    # If user is already logged in, redirect to billing
+    if 'user_id' in session:
+        return redirect(url_for('billing'))
+
+    response = make_response(render_template('index.html'))
+    # Prevent caching of login page
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @app.route('/billing')
 @login_required
 def billing():
-    return render_template('billing.html')
+    html_content = render_template('billing.html')
+    html_content = inject_logout_confirmation(html_content)
+    response = make_response(html_content)
+    # Add headers to prevent caching
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @app.route('/reports')
 @login_required
 def reports():
-    return render_template('reports.html')
+    html_content = render_template('reports.html')
+    html_content = inject_logout_confirmation(html_content)
+    response = make_response(html_content)
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @app.route('/profit')
 @login_required
 def profit():
-    return render_template('profit.html')
+    html_content = render_template('profit.html')
+    html_content = inject_logout_confirmation(html_content)
+    response = make_response(html_content)
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @app.route('/report/<invoice_no>')
@@ -308,7 +419,13 @@ def report(invoice_no):
 def invoice_pdf():
     # Get bill data from session or request args
     bill_data = session.get('bill_data', {})
-    return render_template('invoice_pdf.html', bill_data=bill_data)
+    html_content = render_template('invoice_pdf.html', bill_data=bill_data)
+    html_content = inject_logout_confirmation(html_content)
+    response = make_response(html_content)
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @app.route('/login', methods=['POST'])
@@ -347,6 +464,7 @@ def login():
         # Set session
         session['user_id'] = str(user['_id'])
         session['username'] = user['username']
+        session.permanent = True  # Make session permanent
 
         return jsonify({'message': 'Login successful', 'redirect': url_for('billing')}), 200
 
@@ -357,7 +475,33 @@ def login():
 @app.route('/logout')
 def logout():
     session.clear()
+
+    @after_this_request
+    def add_no_cache_headers(response):
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
+
     return redirect(url_for('index'))
+
+
+@app.route('/logout-confirm', methods=['POST'])
+def logout_confirm():
+    """API endpoint for logout confirmation"""
+    return jsonify({
+        'success': True,
+        'message': 'Please confirm logout',
+        'redirect': url_for('logout')
+    })
+
+
+@app.route('/check-session')
+def check_session():
+    """Check if user is logged in"""
+    return jsonify({
+        'logged_in': 'user_id' in session
+    })
 
 
 @app.route('/save-bill-data', methods=['POST'])

@@ -1191,7 +1191,7 @@
             const currentYear = new Date().getFullYear();
 
             // Add last 5 years and next 5 years
-            for (let year = currentYear - 1; year <= currentYear + 9; year++) {
+            for (let year = currentYear - 0; year <= currentYear + 9; year++) {
                 const option = document.createElement('option');
                 option.value = year;
                 option.textContent = year;
@@ -1660,22 +1660,23 @@
             document.getElementById('billModal').style.display = 'none';
         }
 
-        // Menu selection
+        // Add this to both reports.html and profit.html
         function selectMenu(menu) {
             const menuItems = document.querySelectorAll('.menu-item');
             menuItems.forEach(item => item.classList.remove('active'));
             event.currentTarget.classList.add('active');
 
             if (menu === 'inventory') {
-                window.location.href = '/billing#inventory';
+                // Navigate to billing page with hash to show inventory modal
+                window.location.href = '/billing#show-inventory';
+            } else if (menu === 'dashboard') {
+                window.location.href = '/billing';
             } else if (menu === 'reports') {
-                // Already on reports page
+                window.location.href = '/reports';
             } else if (menu === 'profit') {
                 window.location.href = '/profit';
             } else if (menu === 'logout') {
                 window.location.href = '/logout';
-            } else if (menu === 'dashboard') {
-                window.location.href = '/billing';
             }
         }
 
