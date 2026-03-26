@@ -1,3 +1,9 @@
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session, make_response, \
     after_this_request
 from pymongo import MongoClient
@@ -14,6 +20,7 @@ from medicine_data import default_medicines_data
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 import urllib.parse
+
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'e6db0ccf32af7bdb06579f263147b8d4')
@@ -932,4 +939,6 @@ def health_check():
 if __name__ == '__main__':
     print("=== Pharmacy Management System ===")
     print("=== Server Starting ===")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    # Set debug=False for production
+    app.run(host='0.0.0.0', port=port, debug=False)

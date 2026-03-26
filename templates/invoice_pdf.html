@@ -127,7 +127,7 @@
         }
 
         .edit-frame {
-            width: 250px;
+            width: 280px;
             background: white;
             padding: 20px;
             border-radius: var(--radius);
@@ -210,17 +210,6 @@
 
         .generate-pdf:hover {
             background: #d35400;
-        }
-
-        .send-mail {
-            background: var(--success);
-            padding: 25px;
-            font-size: 20px;
-            justify-content: center;
-        }
-
-        .send-mail:hover {
-            background: var(--success-dark);
         }
 
         .btn-back {
@@ -397,13 +386,6 @@
             padding: 2px 8px;
             color: #777;
             font-size: 12px;
-        }
-
-        #bill-preview .thankyou-section {
-            text-align: center;
-            margin: 10px 0;
-            font-size: 20px;
-            color: var(--primary);
         }
 
         .watermark {
@@ -622,7 +604,7 @@
                         </label>
                     </div>
                     <div class="discount-info">
-                        When ON: 20% discount applied automatically
+                        When ON: 20% discount applied automatically to Rate (invisible in Dis% column)
                     </div>
                 </div>
 
@@ -683,24 +665,31 @@
         let items = [];
         let invoiceNo = Math.floor(100 + Math.random() * 900);
 
-        // Initialize the page with bill data
-        document.addEventListener('DOMContentLoaded', function() {
-            if (billData && Object.keys(billData).length > 0) {
-                initializeBillPreview(billData);
-            } else {
-                const billPreview = document.getElementById('bill-preview');
-                billPreview.innerHTML = `
-                    <div style="text-align: center; padding: 40px;">
-                        <h2 style="color: #e74c3c;">No bill data found</h2>
-                        <p>Redirecting you back to the billing page...</p>
-                    </div>
-                `;
-                console.error('Bill data is missing or invalid');
-                setTimeout(() => {
-                    window.history.back();
-                }, 3000);
-            }
-        });
+        // Calculate rate and amount with default 20% always applied silently
+        // Additional discount is shown in DIS% column
+        function calculateRateAndAmount(item) {
+            // Get MRP
+            const mrp = item.price;
+
+            // Step 1: Apply default 20% discount ALWAYS (silent/invisible)
+            const defaultDiscountPercent = 20;
+            const priceAfterDefaultDiscount = mrp * (1 - defaultDiscountPercent / 100);
+
+            // Step 2: Apply additional discount on top of the default discounted price
+            const additionalDiscPercent = item.additionalDiscount || 0;
+            const finalRate = priceAfterDefaultDiscount * (1 - additionalDiscPercent / 100);
+
+            // Set the final rate (per unit price after all discounts)
+            item.rate = finalRate;
+
+            // Calculate total amount
+            item.amount = item.quantity * finalRate;
+
+            // Store additional discount % for display in DIS% column (ONLY additional discount shown)
+            item.displayDiscountPercent = additionalDiscPercent;
+
+            console.log(`Item: ${item.name}, MRP: ${mrp}, Default 20% applied: ${priceAfterDefaultDiscount}, Additional%: ${additionalDiscPercent}, Final Rate: ${finalRate}, Amount: ${item.amount}`);
+        }
 
         function initializeBillPreview(data) {
             const formattedDate = new Date(data.billDate).toLocaleDateString('en-IN', {
@@ -710,20 +699,24 @@
             });
 
             items = (data.items || []).map(item => {
-                const rate = item.price * 0.8;
-                const amount = item.quantity * rate;
                 return {
                     ...item,
                     mfg: 'WDPL',
                     scheme: '',
-                    baseDiscount: 20,
-                    applyDefaultDiscount: true,
+                    applyDefaultDiscount: true,   // Always ON by default, can be toggled OFF if needed
                     additionalDiscount: 0,
                     showAdditionalDiscount: false,
                     batch: 'N/A',
-                    rate: rate,
-                    amount: amount
+                    expiry: '',
+                    rate: 0,
+                    amount: 0,
+                    displayDiscountPercent: 0
                 };
+            });
+
+            // Initialize rates and amounts for each item
+            items.forEach(item => {
+                calculateRateAndAmount(item);
             });
 
             populateSelect();
@@ -754,17 +747,23 @@
             }
 
             const item = items[index];
-            item.applyDefaultDiscount = toggle.checked;
 
             if (toggle.checked) {
                 status.textContent = 'ON';
                 status.classList.remove('off');
+                // Recalculate with default 20% discount
+                calculateRateAndAmount(item);
             } else {
                 status.textContent = 'OFF';
                 status.classList.add('off');
+                // When OFF, recalculate WITHOUT default 20% discount
+                const mrp = item.price;
+                const additionalDiscPercent = item.additionalDiscount || 0;
+                const finalRate = mrp * (1 - additionalDiscPercent / 100);
+                item.rate = finalRate;
+                item.amount = item.quantity * finalRate;
+                item.displayDiscountPercent = additionalDiscPercent;
             }
-
-            updateRateAndAmount(item);
 
             const formattedDate = new Date(billData.billDate).toLocaleDateString('en-IN', {
                 day: '2-digit',
@@ -772,19 +771,6 @@
                 year: 'numeric'
             });
             renderTable(formattedDate);
-        }
-
-        function updateRateAndAmount(item) {
-            if (item.applyDefaultDiscount) {
-                item.baseDiscount = 20;
-                item.rate = item.price * 0.8;
-            } else {
-                item.baseDiscount = 0;
-                item.rate = item.price;
-            }
-
-            let tempAmount = item.quantity * item.rate;
-            item.amount = tempAmount * (1 - item.additionalDiscount / 100);
         }
 
         function loadRowData() {
@@ -806,11 +792,12 @@
                 status.classList.add('off');
             }
 
-            document.getElementById('edit-scheme').value = item.scheme;
-            document.getElementById('edit-batch').value = item.batch;
+            document.getElementById('edit-scheme').value = item.scheme !== undefined ? item.scheme : '';
+            document.getElementById('edit-batch').value = item.batch || '';
             document.getElementById('edit-expiry').value = item.expiry || '';
-            document.getElementById('show-additional-discount').checked = item.showAdditionalDiscount;
-            document.getElementById('edit-additional-discount').value = item.additionalDiscount > 0 ? item.additionalDiscount : '';
+            const hasAdditional = (item.additionalDiscount !== undefined && item.additionalDiscount > 0);
+            document.getElementById('show-additional-discount').checked = hasAdditional;
+            document.getElementById('edit-additional-discount').value = hasAdditional ? item.additionalDiscount : '';
 
             toggleAdditionalDiscount();
         }
@@ -831,14 +818,13 @@
 
             if (index !== '') {
                 const item = items[index];
-                item.showAdditionalDiscount = checkbox.checked;
-
                 if (!checkbox.checked) {
                     item.additionalDiscount = 0;
                     document.getElementById('edit-additional-discount').value = '';
+                    calculateRateAndAmount(item);
+                    const formattedDate = new Date(billData.billDate).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    renderTable(formattedDate);
                 }
-
-                updateRow();
             }
         }
 
@@ -856,14 +842,27 @@
             item.batch = document.getElementById('edit-batch').value;
             item.expiry = document.getElementById('edit-expiry').value;
 
-            if (item.showAdditionalDiscount) {
+            const showAdditional = document.getElementById('show-additional-discount').checked;
+            if (showAdditional) {
                 const additionalDiscountInput = document.getElementById('edit-additional-discount').value;
                 item.additionalDiscount = additionalDiscountInput === '' ? 0 : parseFloat(additionalDiscountInput) || 0;
             } else {
                 item.additionalDiscount = 0;
             }
 
-            updateRateAndAmount(item);
+            // Recalculate rate and amount based on current settings
+            const toggle = document.getElementById('default-discount-toggle');
+            if (toggle.checked) {
+                calculateRateAndAmount(item);
+            } else {
+                // Default discount OFF
+                const mrp = item.price;
+                const additionalDiscPercent = item.additionalDiscount || 0;
+                const finalRate = mrp * (1 - additionalDiscPercent / 100);
+                item.rate = finalRate;
+                item.amount = item.quantity * finalRate;
+                item.displayDiscountPercent = additionalDiscPercent;
+            }
 
             const formattedDate = new Date(billData.billDate).toLocaleDateString('en-IN', {
                 day: '2-digit',
@@ -895,7 +894,10 @@
                     year: 'numeric'
                 }) : 'N/A';
                 const schemeDisplay = item.scheme === '' ? '' : (item.scheme > 0 ? '+' + item.scheme : item.scheme);
-                const discountDisplay = item.additionalDiscount > 0 ? item.additionalDiscount.toFixed(1) + '%' : '';
+
+                // ONLY show additional discount in DIS% column (default 20% is invisible)
+                const discountDisplay = (item.displayDiscountPercent > 0) ? item.displayDiscountPercent.toFixed(1) + '%' : '';
+
                 const amount = item.amount;
                 total += amount;
 
@@ -1087,7 +1089,12 @@
                         customer_phone: billData?.customerPhone || 'N/A',
                         gst_no: billData?.gstNo || 'N/A',
                         pan_no: billData?.panNo || 'N/A',
-                        items: items,
+                        items: items.map(item => ({
+                            ...item,
+                            rate: item.rate,
+                            amount: item.amount,
+                            additionalDiscount: item.additionalDiscount
+                        })),
                         total_amount: items.reduce((sum, item) => sum + item.amount, 0)
                     };
 
@@ -1137,7 +1144,6 @@
             }
         }
 
-        // Logout confirmation function
         function confirmLogout() {
             if (confirm('⚠️ Are you sure you want to go back?')) {
                 fetch('/logout', {
@@ -1161,9 +1167,24 @@
             return false;
         }
 
-        function sendMailDemo() {
-            alert('Email sent demo!');
-        }
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            if (billData && Object.keys(billData).length > 0) {
+                initializeBillPreview(billData);
+            } else {
+                const billPreview = document.getElementById('bill-preview');
+                billPreview.innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <h2 style="color: #e74c3c;">No bill data found</h2>
+                        <p>Redirecting you back to the billing page...</p>
+                    </div>
+                `;
+                console.error('Bill data is missing or invalid');
+                setTimeout(() => {
+                    window.history.back();
+                }, 3000);
+            }
+        });
     </script>
 </body>
 </html>
