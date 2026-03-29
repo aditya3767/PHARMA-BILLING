@@ -18,6 +18,7 @@
             --success: #27ae60;
             --success-dark: #1e8449;
             --danger: #e74c3c;
+            --warning: #f39c12;
             --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             --radius: 10px;
         }
@@ -127,7 +128,7 @@
         }
 
         .edit-frame {
-            width: 280px;
+            width: 300px;
             background: white;
             padding: 20px;
             border-radius: var(--radius);
@@ -183,28 +184,27 @@
             background: var(--secondary);
             color: white;
             border: none;
-            padding: 14px 25px;
+            padding: 12px 20px;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             transition: all 0.3s;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 8px;
-            margin: 10px 5px;
         }
 
         button:hover {
             background: #1557b7;
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .generate-pdf {
             background: var(--accent);
-            padding: 25px;
-            font-size: 20px;
+            padding: 20px;
+            font-size: 18px;
             justify-content: center;
         }
 
@@ -212,13 +212,133 @@
             background: #d35400;
         }
 
-        .btn-back {
-            font-size: 20px;
-            background: var(--dark);
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
         }
 
-        .btn-back:hover {
-            background: #1a252f;
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding: 8px;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+
+        .toggle-label {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--secondary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .default-discount-toggle {
+            background: #f0f8ff;
+            border: 2px solid #1a73e8;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .default-discount-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .default-discount-label .status {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: #27ae60;
+            color: white;
+        }
+
+        .default-discount-label .status.off {
+            background: #e74c3c;
+        }
+
+        .discount-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .btn-small {
+            background: var(--secondary);
+            padding: 8px 12px;
+            font-size: 12px;
+            margin-top: 10px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-small:hover {
+            background: #1557b7;
+        }
+
+        .apply-all-btn {
+            background: var(--warning);
+            color: var(--dark);
+            width: 100%;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .apply-all-btn:hover {
+            background: #e67e22;
+            color: white;
         }
 
         #bill-preview {
@@ -430,109 +550,6 @@
             font-size: 13px;
         }
 
-        .action-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .toggle-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: 10px;
-            padding: 8px;
-            background: #f5f5f5;
-            border-radius: 4px;
-        }
-
-        .toggle-label {
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-        }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider {
-            background-color: var(--secondary);
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-
-        .default-discount-toggle {
-            background: #f0f8ff;
-            border: 2px solid #1a73e8;
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 15px;
-            margin-bottom: 15px;
-        }
-
-        .default-discount-label {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-weight: 600;
-            color: var(--primary);
-        }
-
-        .default-discount-label .status {
-            font-size: 12px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            background: #27ae60;
-            color: white;
-        }
-
-        .default-discount-label .status.off {
-            background: #e74c3c;
-        }
-
-        .discount-info {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-            font-style: italic;
-        }
-
         @media (max-width: 600px) {
             .content-row {
                 flex-direction: column;
@@ -603,9 +620,9 @@
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <div class="discount-info">
-                        When ON: 20% discount applied automatically to Rate (invisible in Dis% column)
-                    </div>
+                    <button class="btn-small" onclick="removeDefaultDiscountFromAll()">
+                        <i class="fas fa-times"></i> Remove 20% Discount from ALL
+                    </button>
                 </div>
 
                 <div class="form-group">
@@ -634,6 +651,10 @@
                     <label for="edit-additional-discount">Additional Discount (%):</label>
                     <input type="number" step="0.1" id="edit-additional-discount" oninput="updateRow()">
                 </div>
+
+                <button class="apply-all-btn" onclick="applyDiscountToAll()">
+                    <i class="fas fa-globe"></i> Apply to All Medicines
+                </button>
             </div>
 
             <div class="preview-section">
@@ -664,6 +685,7 @@
 
         let items = [];
         let invoiceNo = Math.floor(100 + Math.random() * 900);
+        let currentSelectedIndex = null;
 
         // Calculate rate and amount with default 20% always applied silently
         // Additional discount is shown in DIS% column
@@ -671,8 +693,8 @@
             // Get MRP
             const mrp = item.price;
 
-            // Step 1: Apply default 20% discount ALWAYS (silent/invisible)
-            const defaultDiscountPercent = 20;
+            // Step 1: Apply default 20% discount if enabled (silent/invisible)
+            const defaultDiscountPercent = item.applyDefaultDiscount ? 20 : 0;
             const priceAfterDefaultDiscount = mrp * (1 - defaultDiscountPercent / 100);
 
             // Step 2: Apply additional discount on top of the default discounted price
@@ -688,7 +710,7 @@
             // Store additional discount % for display in DIS% column (ONLY additional discount shown)
             item.displayDiscountPercent = additionalDiscPercent;
 
-            console.log(`Item: ${item.name}, MRP: ${mrp}, Default 20% applied: ${priceAfterDefaultDiscount}, Additional%: ${additionalDiscPercent}, Final Rate: ${finalRate}, Amount: ${item.amount}`);
+            console.log(`Item: ${item.name}, MRP: ${mrp}, Default%: ${defaultDiscountPercent}, Additional%: ${additionalDiscPercent}, Final Rate: ${finalRate}, Amount: ${item.amount}`);
         }
 
         function initializeBillPreview(data) {
@@ -703,7 +725,7 @@
                     ...item,
                     mfg: 'WDPL',
                     scheme: '',
-                    applyDefaultDiscount: true,   // Always ON by default, can be toggled OFF if needed
+                    applyDefaultDiscount: true,   // Always ON by default
                     additionalDiscount: 0,
                     showAdditionalDiscount: false,
                     batch: 'N/A',
@@ -747,23 +769,18 @@
             }
 
             const item = items[index];
+            item.applyDefaultDiscount = toggle.checked;
 
             if (toggle.checked) {
                 status.textContent = 'ON';
                 status.classList.remove('off');
-                // Recalculate with default 20% discount
-                calculateRateAndAmount(item);
             } else {
                 status.textContent = 'OFF';
                 status.classList.add('off');
-                // When OFF, recalculate WITHOUT default 20% discount
-                const mrp = item.price;
-                const additionalDiscPercent = item.additionalDiscount || 0;
-                const finalRate = mrp * (1 - additionalDiscPercent / 100);
-                item.rate = finalRate;
-                item.amount = item.quantity * finalRate;
-                item.displayDiscountPercent = additionalDiscPercent;
             }
+
+            // Recalculate rate & amount based on new base discount
+            calculateRateAndAmount(item);
 
             const formattedDate = new Date(billData.billDate).toLocaleDateString('en-IN', {
                 day: '2-digit',
@@ -773,15 +790,58 @@
             renderTable(formattedDate);
         }
 
+        // NEW FUNCTION: Remove default 20% discount from ALL medicines
+        function removeDefaultDiscountFromAll() {
+            if (items.length === 0) {
+                alert('No medicines in the bill.');
+                return;
+            }
+
+            // Show confirmation dialog
+            const confirmMessage = confirm(`⚠️ Do you want to REMOVE the default 20% discount from ALL ${items.length} medicines?\n\nThis will affect all items in the bill. The rate will be calculated based only on additional discounts.\n\nClick OK to confirm.`);
+
+            if (confirmMessage) {
+                // Set applyDefaultDiscount to false for all items
+                items.forEach(item => {
+                    item.applyDefaultDiscount = false;
+                    calculateRateAndAmount(item);
+                });
+
+                // Update UI
+                const formattedDate = new Date(billData.billDate).toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                renderTable(formattedDate);
+
+                // Update the toggle button status if the current selected row is affected
+                const select = document.getElementById('row-select');
+                const index = select.value;
+                if (index !== '') {
+                    const toggle = document.getElementById('default-discount-toggle');
+                    const status = document.getElementById('default-discount-status');
+                    toggle.checked = false;
+                    status.textContent = 'OFF';
+                    status.classList.add('off');
+                }
+
+                alert(`✅ Successfully removed 20% default discount from all ${items.length} medicines!`);
+            }
+        }
+
         function loadRowData() {
             const select = document.getElementById('row-select');
             const index = select.value;
             if (index === '') return;
 
-            const item = items[index];
+            currentSelectedIndex = parseInt(index);
+            const item = items[currentSelectedIndex];
 
             const toggle = document.getElementById('default-discount-toggle');
             const status = document.getElementById('default-discount-status');
+
+            // Set toggle based on the item's saved state (PERSISTENT)
             toggle.checked = item.applyDefaultDiscount;
 
             if (item.applyDefaultDiscount) {
@@ -851,18 +911,7 @@
             }
 
             // Recalculate rate and amount based on current settings
-            const toggle = document.getElementById('default-discount-toggle');
-            if (toggle.checked) {
-                calculateRateAndAmount(item);
-            } else {
-                // Default discount OFF
-                const mrp = item.price;
-                const additionalDiscPercent = item.additionalDiscount || 0;
-                const finalRate = mrp * (1 - additionalDiscPercent / 100);
-                item.rate = finalRate;
-                item.amount = item.quantity * finalRate;
-                item.displayDiscountPercent = additionalDiscPercent;
-            }
+            calculateRateAndAmount(item);
 
             const formattedDate = new Date(billData.billDate).toLocaleDateString('en-IN', {
                 day: '2-digit',
@@ -870,6 +919,52 @@
                 year: 'numeric'
             });
             renderTable(formattedDate);
+        }
+
+        // Apply additional discount to ALL medicines
+        function applyDiscountToAll() {
+            const select = document.getElementById('row-select');
+            const index = select.value;
+
+            if (index === '') {
+                alert('Please select a row first to get the additional discount value.');
+                return;
+            }
+
+            const sourceItem = items[index];
+            const discountValue = sourceItem.additionalDiscount || 0;
+
+            if (discountValue === 0) {
+                alert('No additional discount to apply. Please set an additional discount first.');
+                return;
+            }
+
+            // Show confirmation dialog
+            const confirmMessage = confirm(`⚠️ Do you want to apply ${discountValue}% additional discount to ALL medicines?\n\nThis will affect all items in the bill. Click OK to confirm.`);
+
+            if (confirmMessage) {
+                // Apply to all items
+                items.forEach(item => {
+                    item.additionalDiscount = discountValue;
+                    item.showAdditionalDiscount = true;
+                    calculateRateAndAmount(item);
+                });
+
+                // Update UI
+                const formattedDate = new Date(billData.billDate).toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                renderTable(formattedDate);
+
+                // Update current selected row display
+                if (currentSelectedIndex !== null) {
+                    loadRowData();
+                }
+
+                alert(`✅ Successfully applied ${discountValue}% additional discount to all ${items.length} medicines!`);
+            }
         }
 
         function formatCurrency(value) {
@@ -1093,7 +1188,8 @@
                             ...item,
                             rate: item.rate,
                             amount: item.amount,
-                            additionalDiscount: item.additionalDiscount
+                            additionalDiscount: item.additionalDiscount,
+                            applyDefaultDiscount: item.applyDefaultDiscount
                         })),
                         total_amount: items.reduce((sum, item) => sum + item.amount, 0)
                     };

@@ -21,9 +21,18 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 import urllib.parse
 
-
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'e6db0ccf32af7bdb06579f263147b8d4')
+
+# Session configuration - Set to 1 hour expiration
+app.config.update(
+    SECRET_KEY=os.environ.get('SECRET_KEY', 'e6db0ccf32af7bdb06579f263147b8d4'),
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=1),  # Session expires after 1 hour
+    SESSION_PERMANENT=True,
+    SESSION_COOKIE_SECURE=False,  # Set to True in production with HTTPS
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_REFRESH_EACH_REQUEST=True  # Refresh session on each request (extends by 1 hour each time user is active)
+)
 
 # MongoDB connection with enhanced SSL handling
 try:
@@ -176,6 +185,17 @@ def sync_default_medicines():
 
 # Call this function when the app starts
 sync_default_medicines()
+
+
+# Before request handler to refresh session and check expiration
+@app.before_request
+def before_request():
+    """Refresh session expiration on each request and check if session is expired"""
+    if 'user_id' in session:
+        # Make session permanent and refresh it
+        session.permanent = True
+        # This will automatically extend the session lifetime by PERMANENT_SESSION_LIFETIME
+        # due to SESSION_REFRESH_EACH_REQUEST = True
 
 
 # Login required decorator with cache prevention
@@ -337,13 +357,25 @@ def inject_logout_confirmation(html_content):
             });
         })();
 
-        // Check session periodically
+        // Check session periodically with expiry time
         function checkSession() {
             fetch('/check-session')
                 .then(response => response.json())
                 .then(data => {
                     if (!data.logged_in && window.location.pathname !== '/') {
+                        // Session expired, redirect to login with message
+                        alert('Your session has expired. Please login again.');
                         window.location.href = '/';
+                    } else if (data.logged_in && data.remaining_minutes !== undefined) {
+                        // Show warning if session is about to expire (last 5 minutes)
+                        if (data.remaining_minutes <= 5 && data.remaining_minutes > 0) {
+                            console.log(`Session expires in ${data.remaining_minutes} minutes`);
+                            // Optional: Show a warning toast/notification
+                            if (data.remaining_minutes === 5) {
+                                // You can implement a toast notification here
+                                console.warn('Session will expire in 5 minutes!');
+                            }
+                        }
                     }
                 })
                 .catch(error => console.error('Error checking session:', error));
@@ -351,6 +383,9 @@ def inject_logout_confirmation(html_content):
 
         // Check session every 30 seconds
         setInterval(checkSession, 30000);
+
+        // Initial session check
+        checkSession();
     })();
     </script>
     """
@@ -363,9 +398,19 @@ def inject_logout_confirmation(html_content):
 
 @app.route('/')
 def index():
-    # If user is already logged in, redirect to billing
+    # If user is already logged in and session is valid, redirect to billing
     if 'user_id' in session:
-        return redirect(url_for('billing'))
+        # Verify user still exists in database (optional additional check)
+        try:
+            user = users_collection.find_one({'_id': ObjectId(session['user_id'])})
+            if user:
+                return redirect(url_for('billing'))
+            else:
+                # User no longer exists, clear session
+                session.clear()
+        except:
+            # If any error occurs, clear session
+            session.clear()
 
     response = make_response(render_template('index.html'))
     # Prevent caching of login page
@@ -468,12 +513,20 @@ def login():
         if user['password'] != password:
             return jsonify({'error': 'Invalid credentials'}), 401
 
-        # Set session
+        # Set session with 1 hour expiration
+        session.clear()  # Clear any existing session data
         session['user_id'] = str(user['_id'])
         session['username'] = user['username']
-        session.permanent = True  # Make session permanent
+        session.permanent = True  # Make session permanent (uses PERMANENT_SESSION_LIFETIME)
 
-        return jsonify({'message': 'Login successful', 'redirect': url_for('billing')}), 200
+        # Store login time for reference
+        session['login_time'] = datetime.now().isoformat()
+
+        return jsonify({
+            'message': 'Login successful',
+            'redirect': url_for('billing'),
+            'session_expiry_hours': 1
+        }), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -482,6 +535,7 @@ def login():
 @app.route('/logout')
 def logout():
     session.clear()
+    session.permanent = False
 
     @after_this_request
     def add_no_cache_headers(response):
@@ -505,10 +559,23 @@ def logout_confirm():
 
 @app.route('/check-session')
 def check_session():
-    """Check if user is logged in"""
-    return jsonify({
-        'logged_in': 'user_id' in session
-    })
+    """Check if user is logged in and get remaining session time"""
+    if 'user_id' in session:
+        # Calculate remaining session time
+        remaining_seconds = session.permanent_session_lifetime.total_seconds() if hasattr(session,
+                                                                                          'permanent_session_lifetime') else 3600
+        remaining_minutes = int(remaining_seconds / 60)
+
+        return jsonify({
+            'logged_in': True,
+            'username': session.get('username'),
+            'remaining_minutes': remaining_minutes,
+            'session_expires_in_hours': round(remaining_seconds / 3600, 1)
+        })
+    else:
+        return jsonify({
+            'logged_in': False
+        })
 
 
 @app.route('/save-bill-data', methods=['POST'])
@@ -932,13 +999,15 @@ def health_check():
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
-        'database': 'connected' if hasattr(db, 'command') else 'dummy'
+        'database': 'connected' if hasattr(db, 'command') else 'dummy',
+        'session_timeout': '1 hour'
     })
 
 
 if __name__ == '__main__':
     print("=== Pharmacy Management System ===")
     print("=== Server Starting ===")
+    print("=== Session Timeout: 1 Hour ===")
     port = int(os.environ.get('PORT', 5000))
     # Set debug=False for production
     app.run(host='0.0.0.0', port=port, debug=False)
