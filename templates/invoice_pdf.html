@@ -128,7 +128,7 @@
         }
 
         .edit-frame {
-            width: 300px;
+            width: 220px;
             background: white;
             padding: 20px;
             border-radius: var(--radius);
@@ -614,14 +614,14 @@
                         <span id="default-discount-status" class="status">ON</span>
                     </div>
                     <div class="toggle-container">
-                        <span class="toggle-label">Apply to this item:</span>
+                        <span class="toggle-label">Apply item :</span>
                         <label class="switch">
                             <input type="checkbox" id="default-discount-toggle" checked onchange="toggleDefaultDiscount()">
                             <span class="slider"></span>
                         </label>
                     </div>
                     <button class="btn-small" onclick="removeDefaultDiscountFromAll()">
-                        <i class="fas fa-times"></i> Remove 20% Discount from ALL
+                        <i class="fas fa-times"></i> Remove Discount (All)
                     </button>
                 </div>
 
@@ -991,6 +991,8 @@
                 const schemeDisplay = item.scheme === '' ? '' : (item.scheme > 0 ? '+' + item.scheme : item.scheme);
 
                 // ONLY show additional discount in DIS% column (default 20% is invisible)
+                // CRITICAL FIX: displayDiscountPercent is already set in calculateRateAndAmount
+                // When default discount is removed, additional discount may be 0, so show empty string
                 const discountDisplay = (item.displayDiscountPercent > 0) ? item.displayDiscountPercent.toFixed(1) + '%' : '';
 
                 const amount = item.amount;
@@ -1016,17 +1018,7 @@
             for (let i = 0; i < blankRows; i++) {
                 productsHTML += `
                     <tr class="blank-row">
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
+                        <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
                     </tr>
                 `;
             }
@@ -1103,6 +1095,7 @@
             `;
         }
 
+        // FIXED: Multi-page PDF with proper bottom alignment - no content overflow
         function generatePDF() {
             try {
                 const element = document.getElementById('bill-preview');
@@ -1144,14 +1137,13 @@
                 html2canvas(element, options).then(canvas1 => {
                     const imgData1 = canvas1.toDataURL('image/jpeg', 0.95);
                     const imgHeight1 = (canvas1.height * imgWidth) / canvas1.width;
-                    let heightLeft1 = imgHeight1;
                     let position1 = 0;
 
                     pdf.addImage(imgData1, 'JPEG', 0, position1, imgWidth, imgHeight1, '', 'MEDIUM');
-                    heightLeft1 -= pageHeight;
+                    let heightLeft1 = imgHeight1 - pageHeight;
 
-                    while (heightLeft1 >= 0) {
-                        position1 = heightLeft1 - imgHeight1;
+                    while (heightLeft1 > 0) {
+                        position1 = position1 - pageHeight;
                         pdf.addPage();
                         pdf.addImage(imgData1, 'JPEG', 0, position1, imgWidth, imgHeight1, '', 'MEDIUM');
                         heightLeft1 -= pageHeight;
@@ -1163,14 +1155,13 @@
                     const imgData2 = canvas2.toDataURL('image/jpeg', 0.95);
                     const imgHeight2 = (canvas2.height * imgWidth) / canvas2.width;
                     pdf.addPage();
-                    let heightLeft2 = imgHeight2;
                     let position2 = 0;
 
                     pdf.addImage(imgData2, 'JPEG', 0, position2, imgWidth, imgHeight2, '', 'MEDIUM');
-                    heightLeft2 -= pageHeight;
+                    let heightLeft2 = imgHeight2 - pageHeight;
 
-                    while (heightLeft2 >= 0) {
-                        position2 = heightLeft2 - imgHeight2;
+                    while (heightLeft2 > 0) {
+                        position2 = position2 - pageHeight;
                         pdf.addPage();
                         pdf.addImage(imgData2, 'JPEG', 0, position2, imgWidth, imgHeight2, '', 'MEDIUM');
                         heightLeft2 -= pageHeight;
@@ -1279,6 +1270,7 @@
                 setTimeout(() => {
                     window.history.back();
                 }, 3000);
+
             }
         });
     </script>
