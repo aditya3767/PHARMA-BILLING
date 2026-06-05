@@ -308,6 +308,36 @@
             background: #e74c3c;
         }
 
+        /* GST Toggle Styles */
+        .gst-toggle {
+            background: #f0fff4;
+            border: 2px solid var(--success);
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .gst-toggle-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            color: var(--success-dark);
+        }
+
+        .gst-toggle-label .status {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: var(--success);
+            color: white;
+        }
+
+        .gst-toggle-label .status.off {
+            background: var(--danger);
+        }
+
         .discount-info {
             font-size: 12px;
             color: #666;
@@ -390,6 +420,16 @@
             font-weight: 500;
         }
 
+        #bill-preview .page-marker-top-left {
+            position: absolute;
+            top: 5px;
+            left: 10px;
+            font-style: italic;
+            color: #666;
+            font-size: 14px;
+            font-weight: normal;
+        }
+
         #bill-preview .bill-details {
             display: flex;
             justify-content: space-between;
@@ -454,6 +494,11 @@
             font-weight: 700;
             background-color: #e8f4fc;
             font-size: 18px;
+        }
+
+        #bill-preview .tax-row {
+            background-color: #f0f8ff;
+            font-weight: 500;
         }
 
         #bill-preview .note {
@@ -626,6 +671,24 @@
                     </button>
                 </div>
 
+                <!-- GST ON/OFF Toggle Button -->
+                <div class="form-group gst-toggle">
+                    <div class="gst-toggle-label">
+                        <span><i class="fas fa-percent"></i> CGST & SGST (2.5% each)</span>
+                        <span id="gst-status" class="status">ON</span>
+                    </div>
+                    <div class="toggle-container">
+                        <span class="toggle-label">Enable GST Calculation:</span>
+                        <label class="switch">
+                            <input type="checkbox" id="gst-toggle" checked onchange="toggleGST()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="discount-info">
+                        <i class="fas fa-info-circle"></i> When OFF, both CGST and SGST will show ₹0
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="row-select">Select Row:</label>
                     <select id="row-select" onchange="loadRowData()">
@@ -687,6 +750,10 @@
         let items = [];
         let invoiceNo = Math.floor(100 + Math.random() * 900);
         let currentSelectedIndex = null;
+        let gstEnabled = true;  // GST ON by default
+
+        // Company GST Number
+        const COMPANY_GST = "27AVGPB5622A1Z7";
 
         // Calculate rate and amount with default 20% always applied silently
         // Additional discount is shown in DIS% column
@@ -711,7 +778,44 @@
             // Store additional discount % for display in DIS% column (ONLY additional discount shown)
             item.displayDiscountPercent = additionalDiscPercent;
 
-            console.log(`Item: ${item.name}, MRP: ${mrp}, Default%: ${defaultDiscountPercent}, Additional%: ${additionalDiscPercent}, Final Rate: ${finalRate}, Amount: ${item.amount}`);
+            // Calculate CGST and SGST (2.5% each on the total amount) - only if GST is enabled
+            if (gstEnabled) {
+                item.cgst = item.amount * 0.025;
+                item.sgst = item.amount * 0.025;
+            } else {
+                item.cgst = 0;
+                item.sgst = 0;
+            }
+
+            console.log(`Item: ${item.name}, MRP: ${mrp}, Default%: ${defaultDiscountPercent}, Additional%: ${additionalDiscPercent}, Final Rate: ${finalRate}, Amount: ${item.amount}, CGST: ${item.cgst}, SGST: ${item.sgst}`);
+        }
+
+        // Toggle GST ON/OFF
+        function toggleGST() {
+            const gstToggle = document.getElementById('gst-toggle');
+            const gstStatus = document.getElementById('gst-status');
+
+            gstEnabled = gstToggle.checked;
+
+            if (gstEnabled) {
+                gstStatus.textContent = 'ON';
+                gstStatus.classList.remove('off');
+            } else {
+                gstStatus.textContent = 'OFF';
+                gstStatus.classList.add('off');
+            }
+
+            // Recalculate all items with new GST setting
+            items.forEach(item => {
+                calculateRateAndAmount(item);
+            });
+
+            const formattedDate = new Date(billData.billDate).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            renderTable(formattedDate);
         }
 
         function initializeBillPreview(data) {
@@ -733,7 +837,9 @@
                     expiry: '',
                     rate: 0,
                     amount: 0,
-                    displayDiscountPercent: 0
+                    displayDiscountPercent: 0,
+                    cgst: 0,
+                    sgst: 0
                 };
             });
 
@@ -791,7 +897,7 @@
             renderTable(formattedDate);
         }
 
-        // FIXED: Remove default 20% discount from ALL medicines
+        // Remove default 20% discount from ALL medicines
         function removeDefaultDiscountFromAll() {
             if (items.length === 0) {
                 alert('No medicines in the bill.');
@@ -816,7 +922,7 @@
                 });
                 renderTable(formattedDate);
 
-                // FIXED: Update the toggle button status for ALL rows
+                // Update the toggle button status for ALL rows
                 const select = document.getElementById('row-select');
                 const currentIndex = select.value;
 
@@ -979,9 +1085,14 @@
             return `₹${num % 1 === 0 ? num.toString() : num.toFixed(2)}`;
         }
 
+        // Store current page marker text for PDF generation
+        let currentPageMarker = '(Original)';
+
         function renderTable(formattedDate) {
             let productsHTML = '';
-            let total = 0;
+            let totalAmount = 0;
+            let totalCGST = 0;
+            let totalSGST = 0;
 
             items.forEach(item => {
                 const expiryDate = item.expiry ? new Date(item.expiry).toLocaleDateString('en-IN', {
@@ -994,7 +1105,9 @@
                 const discountDisplay = (item.displayDiscountPercent > 0) ? item.displayDiscountPercent.toFixed(1) + '%' : '';
 
                 const amount = item.amount;
-                total += amount;
+                totalAmount += amount;
+                totalCGST += item.cgst;
+                totalSGST += item.sgst;
 
                 productsHTML += `
                     <tr>
@@ -1013,15 +1126,22 @@
                 `;
             });
 
+            const grandTotal = totalAmount + totalCGST + totalSGST;
+
             const billPreview = document.getElementById('bill-preview');
             billPreview.innerHTML = `
                 <div class="watermark">SHREE SAMARTH ENTERPRISES</div>
+                <div class="page-marker-top-left" id="page-marker">${currentPageMarker}</div>
                 <div class="company-header">
                     <div class="company-name">Shree Samarth Enterprises</div>
                     <div class="company-address">H.No. 248, Varachi Ali, AT Kamba, Post Varap, Taluka Kalyan 421301, Dist. Thane</div>
                     <div class="contact-info">
-                        <div id="page-marker" style="font-style: italic; color: #666; font-size: 14px;"></div>
-                        <div style="display: flex; align-items: center; gap: 5px;">Phone: 7057710099</div>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <span><strong>GSTIN:</strong> ${COMPANY_GST}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <span><strong>Phone:</strong> 7057710099</span>
+                        </div>
                     </div>
                 </div>
 
@@ -1060,9 +1180,17 @@
                     </thead>
                     <tbody>
                         ${productsHTML}
+                        <tr class="tax-row">
+                            <td colspan="10" style="text-align: right;">CGST (2.5%):</td>
+                            <td>${formatCurrency(totalCGST)}</td>
+                        </tr>
+                        <tr class="tax-row">
+                            <td colspan="10" style="text-align: right;">SGST (2.5%):</td>
+                            <td>${formatCurrency(totalSGST)}</td>
+                        </tr>
                         <tr class="total-row">
                             <td colspan="10" style="text-align: right; font-weight: 700;">Total Amount:</td>
-                            <td style="font-weight: 700;">${formatCurrency(total)}</td>
+                            <td style="font-weight: 700;">${formatCurrency(grandTotal)}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1085,20 +1213,13 @@
             `;
         }
 
-        // FIXED: Multi-page PDF generation with proper pagination
+        // Multi-page PDF generation with proper pagination
         async function generatePDF() {
             try {
                 const element = document.getElementById('bill-preview');
                 if (!element) {
                     console.error("Bill preview element not found");
                     alert("Error: Bill preview section is missing");
-                    return;
-                }
-
-                const marker = document.getElementById('page-marker');
-                if (!marker) {
-                    console.error("Page marker not found");
-                    alert("Error: Page marker element is missing");
                     return;
                 }
 
@@ -1124,7 +1245,16 @@
                 const filename = `${invoiceNo}_shree_samarth_enterprises.pdf`;
 
                 // Generate Original copy
-                marker.textContent = '(Original)';
+                currentPageMarker = '(Original)';
+                renderTable(new Date(billData.billDate).toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                }));
+
+                // Wait for DOM update
+                await new Promise(resolve => setTimeout(resolve, 100));
+
                 const canvas1 = await html2canvas(element, options);
                 const imgData1 = canvas1.toDataURL('image/jpeg', 0.95);
                 const imgHeight1 = (canvas1.height * imgWidth) / canvas1.width;
@@ -1143,7 +1273,16 @@
                 }
 
                 // Generate Duplicate copy
-                marker.textContent = '(Duplicate)';
+                currentPageMarker = '(Duplicate)';
+                renderTable(new Date(billData.billDate).toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                }));
+
+                // Wait for DOM update
+                await new Promise(resolve => setTimeout(resolve, 100));
+
                 const canvas2 = await html2canvas(element, options);
                 const imgData2 = canvas2.toDataURL('image/jpeg', 0.95);
                 const imgHeight2 = (canvas2.height * imgWidth) / canvas2.width;
@@ -1170,14 +1309,20 @@
                     customer_phone: billData?.customerPhone || 'N/A',
                     gst_no: billData?.gstNo || 'N/A',
                     pan_no: billData?.panNo || 'N/A',
+                    gst_enabled: gstEnabled,
                     items: items.map(item => ({
                         ...item,
                         rate: item.rate,
                         amount: item.amount,
                         additionalDiscount: item.additionalDiscount,
-                        applyDefaultDiscount: item.applyDefaultDiscount
+                        applyDefaultDiscount: item.applyDefaultDiscount,
+                        cgst: item.cgst,
+                        sgst: item.sgst
                     })),
-                    total_amount: items.reduce((sum, item) => sum + item.amount, 0)
+                    total_amount: items.reduce((sum, item) => sum + item.amount, 0),
+                    total_cgst: items.reduce((sum, item) => sum + item.cgst, 0),
+                    total_sgst: items.reduce((sum, item) => sum + item.sgst, 0),
+                    grand_total: items.reduce((sum, item) => sum + item.amount, 0) + items.reduce((sum, item) => sum + item.cgst, 0) + items.reduce((sum, item) => sum + item.sgst, 0)
                 };
 
                 fetch('/api/save_bill', {

@@ -174,7 +174,6 @@
             right: 15px;
             cursor: pointer;
             color: var(--gray);
-            display: none;
             background: var(--light-gray);
             width: 24px;
             height: 24px;
@@ -819,9 +818,70 @@
             border-radius: 4px;
             transition: width 0.5s ease;
         }
+
+        /* GST Badge */
+        .gst-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .gst-on {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .gst-off {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        /* Page Loading Overlay */
+        .page-loading-overlay {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .page-loading-overlay.hide {
+            display: none;
+        }
+
+        .page-loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid var(--primary-light);
+            border-top: 6px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .page-loading-text {
+            font-size: 18px;
+            color: var(--primary);
+            font-weight: 500;
+        }
     </style>
 </head>
-<body onload="initializeApp()">
+<body>
+    <!-- Page Loading Overlay -->
+    <div id="pageLoadingOverlay" class="page-loading-overlay">
+        <div class="page-loading-spinner"></div>
+        <div class="page-loading-text">Loading profit data...</div>
+    </div>
+
     <div class="container">
         <!-- Sidebar -->
         <div class="sidebar">
@@ -839,7 +899,7 @@
                     <span>Inventory</span>
                 </div>
                 <div class="menu-item active" onclick="selectMenu('profit')">
-                    <i class="fas fa-receipt"></i>
+                    <i class="fas fa-chart-line"></i>
                     <span>Profit</span>
                 </div>
                 <div class="menu-item" onclick="selectMenu('reports')">
@@ -900,7 +960,7 @@
                             </div>
                             <span id="overallTotalAmount">₹0</span>
                         </div>
-                        <div class="summary-label">Overall Total Amount</div>
+                        <div class="summary-label">Total Revenue (incl. GST)</div>
                         <div class="progress-container">
                             <div class="progress-bar">
                                 <div class="progress-fill" id="amountProgress" style="width: 0%"></div>
@@ -917,7 +977,7 @@
                                 <i class="fas fa-arrow-up"></i> <span id="profitPercentage">0%</span>
                             </span>
                         </div>
-                        <div class="summary-label">Overall Total Profit</div>
+                        <div class="summary-label">Total Profit (Excluding GST)</div>
                         <div class="progress-container">
                             <div class="progress-bar">
                                 <div class="progress-fill" id="profitProgress" style="width: 0%"></div>
@@ -984,6 +1044,7 @@
                                 <th onclick="sortTable('total_amount')">Total Amount <i class="fas fa-sort"></i></th>
                                 <th onclick="sortTable('profit')">Profit <i class="fas fa-sort"></i></th>
                                 <th>Profit %</th>
+                                <th>GST</th>
                             </tr>
                         </thead>
                         <tbody id="billsTableBody">
@@ -1014,19 +1075,19 @@
                     <div class="summary-stats">
                         <div class="stat-box">
                             <div class="stat-value" id="totalProfit">₹0</div>
-                            <div class="stat-label">Total Profit</div>
+                            <div class="stat-label">Total Profit (Excl. GST)</div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-value" id="totalDiscount">₹0</div>
-                            <div class="stat-label">Total Discount</div>
+                            <div class="stat-value" id="totalGSTCollected">₹0</div>
+                            <div class="stat-label">GST Collected (CGST+SGST)</div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-value" id="totalItems">0</div>
-                            <div class="stat-label">Total Items</div>
+                            <div class="stat-value" id="totalSubtotal">₹0</div>
+                            <div class="stat-label">Subtotal (Excl. GST)</div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-value" id="profitMargin">0%</div>
-                            <div class="stat-label">Profit Margin</div>
+                            <div class="stat-value" id="totalRevenue">₹0</div>
+                            <div class="stat-label">Total Revenue (incl. GST)</div>
                         </div>
                     </div>
 
@@ -1038,7 +1099,7 @@
                             </div>
                         </div>
                         <div class="chart-wrapper">
-                            <h3>Revenue vs Cost</h3>
+                            <h3>Revenue vs Cost vs GST</h3>
                             <div class="chart-container">
                                 <canvas id="revenueChart"></canvas>
                             </div>
@@ -1071,8 +1132,10 @@
                                     <th>Pack</th>
                                     <th>MRP</th>
                                     <th>Rate</th>
-                                    <th>Amount</th>
-                                    <th>Discount</th>
+                                    <th>Subtotal</th>
+                                    <th>CGST</th>
+                                    <th>SGST</th>
+                                    <th>Total</th>
                                     <th>Profit</th>
                                     <th>Margin %</th>
                                 </tr>
@@ -1082,38 +1145,6 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Stats Modal -->
-    <div id="statsModal" class="stats-modal">
-        <div class="stats-modal-content">
-            <span class="close" onclick="closeStatsModal()">&times;</span>
-            <h2><i class="fas fa-chart-bar"></i> Medicine Inventory Statistics</h2>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value" id="totalMedicines">0</div>
-                    <div class="stat-label">Total Medicines</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="totalVariants">0</div>
-                    <div class="stat-label">Total Variants</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="totalStock">0</div>
-                    <div class="stat-label">Total Stock</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="expiringSoon">0</div>
-                    <div class="stat-label">Expiring Soon</div>
-                </div>
-            </div>
-            <div style="margin-top: 30px;">
-                <h3>Medicine Categories</h3>
-                <div id="categoryStats">
-                    <!-- Category stats will be populated here -->
                 </div>
             </div>
         </div>
@@ -1130,15 +1161,26 @@
         let currentInvoice = null;
         let overallTotalAmount = 0;
         let overallTotalProfit = 0;
+        let overallTotalGST = 0;
         let billProfits = {};
         let billDetails = {};
 
         // Initialize the profit page
         async function initializeApp() {
-            await fetchBills();
-            await fetchMedicines();
-            await preloadBillDetails();
-            filterBills();
+            try {
+                await fetchBills();
+                await fetchMedicines();
+                await preloadBillDetails();
+                filterBills();
+            } catch (error) {
+                console.error('Initialization error:', error);
+            } finally {
+                // Hide loading overlay after data is loaded
+                const loadingOverlay = document.getElementById('pageLoadingOverlay');
+                if (loadingOverlay) {
+                    loadingOverlay.classList.add('hide');
+                }
+            }
         }
 
         // Fetch bills from the backend
@@ -1171,7 +1213,7 @@
         async function preloadBillDetails() {
             try {
                 const loadingIndicator = document.getElementById('loadingIndicator');
-                loadingIndicator.style.display = 'flex';
+                if (loadingIndicator) loadingIndicator.style.display = 'flex';
 
                 // Fetch all bill details in parallel
                 const billDetailPromises = bills.map(bill =>
@@ -1194,43 +1236,54 @@
                 // Calculate overall totals
                 calculateOverallTotals();
 
-                loadingIndicator.style.display = 'none';
+                if (loadingIndicator) loadingIndicator.style.display = 'none';
             } catch (error) {
                 console.error('Error preloading bill details:', error);
-                alert('Failed to load bill details. Please try again.');
+                if (loadingIndicator) loadingIndicator.style.display = 'none';
             }
         }
 
-        // Calculate profit for a specific bill - KEEPING YOUR ORIGINAL FORMULA BUT ADDING SCHEME
+        // Calculate profit for a specific bill - Cost = MRP × 0.3 (70% margin)
         function calculateBillProfit(invoice_no, bill) {
             let totalProfit = 0;
+            let totalSubtotal = 0;
+            let totalGST = 0;
             let totalRevenue = 0;
-            let totalFullMRP = 0; // For MRP-based margin
+            let totalFullMRP = 0;
 
             if (bill && bill.items) {
                 bill.items.forEach(item => {
                     const mrp = item.mrp || item.price || 0;
-                    const full_mrp_amount = mrp * item.quantity; // Full MRP for margin calc
-                    const selling_amount = item.amount || (item.quantity * item.rate);
+                    const full_mrp_amount = mrp * item.quantity;
+                    const subtotal_amount = item.amount || (item.quantity * item.rate);
+                    const cgst = item.cgst || 0;
+                    const sgst = item.sgst || 0;
+                    const itemGST = cgst + sgst;
+                    const selling_amount = subtotal_amount + itemGST;
 
                     // Get scheme quantity (free items)
                     const scheme = parseFloat(item.scheme) || 0;
-
-                    // Calculate total units (sold + free)
                     const total_units = item.quantity + scheme;
 
-                    // KEEPING YOUR ORIGINAL FORMULA: cost = MRP * 0.3
+                    // Cost calculation: 30% of MRP (70% margin on MRP)
                     const cost = mrp * 0.3;
-                    const profit = selling_amount - (cost * total_units); // Include scheme in cost calculation
+                    const profit = subtotal_amount - (cost * total_units);
 
                     totalProfit += profit;
+                    totalSubtotal += subtotal_amount;
+                    totalGST += itemGST;
                     totalRevenue += selling_amount;
                     totalFullMRP += full_mrp_amount;
                 });
             }
 
             billProfits[invoice_no] = totalProfit;
-            billDetails[invoice_no].totalFullMRP = totalFullMRP;
+            if (billDetails[invoice_no]) {
+                billDetails[invoice_no].totalSubtotal = totalSubtotal;
+                billDetails[invoice_no].totalGST = totalGST;
+                billDetails[invoice_no].totalRevenue = totalRevenue;
+                billDetails[invoice_no].totalFullMRP = totalFullMRP;
+            }
             return totalProfit;
         }
 
@@ -1238,10 +1291,17 @@
         function calculateOverallTotals() {
             overallTotalAmount = 0;
             overallTotalProfit = 0;
+            overallTotalGST = 0;
 
             bills.forEach(bill => {
-                overallTotalAmount += bill.total_amount;
-                overallTotalProfit += billProfits[bill.invoice_no] || 0;
+                const billDetail = billDetails[bill.invoice_no];
+                if (billDetail) {
+                    overallTotalAmount += billDetail.totalRevenue || bill.total_amount;
+                    overallTotalProfit += billProfits[bill.invoice_no] || 0;
+                    overallTotalGST += billDetail.totalGST || 0;
+                } else {
+                    overallTotalAmount += bill.total_amount;
+                }
             });
 
             // Update overall summary
@@ -1257,7 +1317,7 @@
             document.getElementById('overallTotalAmount').textContent = `₹${overallTotalAmount.toFixed(2)}`;
             document.getElementById('overallTotalProfit').textContent = `₹${overallTotalProfit.toFixed(2)}`;
 
-            // Calculate overall MRP-based margin (sum profits / sum full MRPs across all bills)
+            // Calculate overall profit percentage based on total MRP
             let grandTotalFullMRP = 0;
             bills.forEach(bill => {
                 const billDetail = billDetails[bill.invoice_no];
@@ -1285,16 +1345,19 @@
 
         // Update progress bars
         function updateProgressBars() {
-            // Calculate progress percentages (for visual effect only)
             const billsProgress = Math.min((bills.length / 100) * 100, 100);
             const amountProgress = Math.min((overallTotalAmount / 50000) * 100, 100);
             const profitProgress = overallTotalProfit > 0 ?
                 Math.min((overallTotalProfit / 10000) * 100, 100) :
                 Math.min((Math.abs(overallTotalProfit) / 5000) * 100, 100);
 
-            document.getElementById('billsProgress').style.width = `${billsProgress}%`;
-            document.getElementById('amountProgress').style.width = `${amountProgress}%`;
-            document.getElementById('profitProgress').style.width = `${profitProgress}%`;
+            const billsProgressEl = document.getElementById('billsProgress');
+            const amountProgressEl = document.getElementById('amountProgress');
+            const profitProgressEl = document.getElementById('profitProgress');
+
+            if (billsProgressEl) billsProgressEl.style.width = `${billsProgress}%`;
+            if (amountProgressEl) amountProgressEl.style.width = `${amountProgress}%`;
+            if (profitProgressEl) profitProgressEl.style.width = `${profitProgress}%`;
         }
 
         // Fetch medicines from the backend
@@ -1305,9 +1368,10 @@
                     throw new Error('Failed to fetch medicines');
                 }
                 medicines = await response.json();
+                console.log('Medicines loaded:', medicines.length);
             } catch (error) {
                 console.error('Error fetching medicines:', error);
-                alert('Failed to load medicines. Please try again.');
+                medicines = [];
             }
         }
 
@@ -1319,13 +1383,13 @@
             const profitRange = document.getElementById('profitRange').value;
 
             const tableBody = document.getElementById('billsTableBody');
+            if (!tableBody) return;
             tableBody.innerHTML = '';
 
             let filteredBills = bills.filter(bill => {
                 const matchesSearch = bill.invoice_no.toString().includes(searchTerm) ||
                                       bill.customer_name.toLowerCase().includes(searchTerm);
 
-                // Amount range filter
                 let matchesAmountRange = true;
                 if (amountRange === '0-500') {
                     matchesAmountRange = bill.total_amount >= 0 && bill.total_amount <= 500;
@@ -1337,7 +1401,6 @@
                     matchesAmountRange = bill.total_amount > 5000;
                 }
 
-                // Profit range filter
                 let matchesProfitRange = true;
                 const profit = billProfits[bill.invoice_no] || 0;
                 if (profitRange === 'profit-positive') {
@@ -1355,28 +1418,29 @@
                 return matchesSearch && matchesAmountRange && matchesProfitRange;
             });
 
-            // Apply sorting
             filteredBills = sortBills(filteredBills, currentSort);
 
             filteredBills.forEach(bill => {
                 const profit = billProfits[bill.invoice_no] || 0;
                 const billDetail = billDetails[bill.invoice_no];
                 let totalFullMRPForBill = 0;
-                if (billDetail && billDetail.items) {
-                    billDetail.items.forEach(item => {
-                        totalFullMRPForBill += (item.mrp || 0) * item.quantity;
-                    });
+                if (billDetail && billDetail.totalFullMRP) {
+                    totalFullMRPForBill = billDetail.totalFullMRP;
                 }
                 const profitPercentage = totalFullMRPForBill > 0 ? ((profit / totalFullMRPForBill) * 100).toFixed(1) : 0;
+
+                const totalGST = billDetail ? billDetail.totalGST : 0;
+                const gstStatus = totalGST > 0 ? '<span class="gst-badge gst-on">GST On</span>' : '<span class="gst-badge gst-off">GST Off</span>';
 
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td><a href="#" onclick="showProfitModal(${bill.invoice_no}); return false;">${bill.invoice_no}</a></td>
-                    <td>${bill.date}</td>
+                    <td>${bill.date}${bill.time ? ' ' + bill.time : ''}</td>
                     <td>${bill.customer_name}</td>
-                    <td>₹${bill.total_amount.toFixed(2)}</td>
+                    <td>₹${(billDetail ? billDetail.totalRevenue : bill.total_amount).toFixed(2)}</td>
                     <td style="color: ${profit >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight: 600;">₹${profit.toFixed(2)}</td>
                     <td style="color: ${profit >= 0 ? 'var(--success)' : 'var(--danger)'}">${profitPercentage}%</td>
+                    <td>${gstStatus}</td>
                 `;
                 tableBody.appendChild(row);
             });
@@ -1434,16 +1498,23 @@
             }
 
             currentSort = `${column}-${sortDirection}`;
-            document.getElementById('sortBy').value = currentSort;
+            const sortBySelect = document.getElementById('sortBy');
+            if (sortBySelect) sortBySelect.value = currentSort;
             filterBills();
         }
 
         // Clear search and filters
         function clearSearch() {
-            document.getElementById('reportSearch').value = '';
-            document.getElementById('sortBy').value = 'date-desc';
-            document.getElementById('amountRange').value = 'all';
-            document.getElementById('profitRange').value = 'all';
+            const searchInput = document.getElementById('reportSearch');
+            const sortBySelect = document.getElementById('sortBy');
+            const amountRangeSelect = document.getElementById('amountRange');
+            const profitRangeSelect = document.getElementById('profitRange');
+
+            if (searchInput) searchInput.value = '';
+            if (sortBySelect) sortBySelect.value = 'date-desc';
+            if (amountRangeSelect) amountRangeSelect.value = 'all';
+            if (profitRangeSelect) profitRangeSelect.value = 'all';
+
             currentSort = 'date-desc';
             filterBills();
         }
@@ -1453,18 +1524,21 @@
             currentInvoice = invoice_no;
 
             const modal = document.getElementById('profitModal');
-            modal.classList.add('show');
+            if (modal) modal.classList.add('show');
 
-            document.getElementById('loadingIndicator').style.display = 'flex';
-            document.getElementById('profitContent').style.display = 'none';
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const profitContent = document.getElementById('profitContent');
+            const invoiceTitle = document.getElementById('invoiceTitle');
 
-            document.getElementById('invoiceTitle').textContent = invoice_no;
+            if (loadingIndicator) loadingIndicator.style.display = 'flex';
+            if (profitContent) profitContent.style.display = 'none';
+            if (invoiceTitle) invoiceTitle.textContent = invoice_no;
 
             try {
                 await loadProfitData(invoice_no);
 
-                document.getElementById('loadingIndicator').style.display = 'none';
-                document.getElementById('profitContent').style.display = 'block';
+                if (loadingIndicator) loadingIndicator.style.display = 'none';
+                if (profitContent) profitContent.style.display = 'block';
 
                 animateElements();
             } catch (error) {
@@ -1474,7 +1548,7 @@
             }
         }
 
-        // Load profit data asynchronously - KEEPING YOUR ORIGINAL FORMULA BUT ADDING SCHEME
+        // Load profit data with GST information
         async function loadProfitData(invoice_no) {
             try {
                 let bill = billDetails[invoice_no];
@@ -1488,85 +1562,94 @@
                 }
 
                 let totalProfit = 0;
-                let totalDiscount = 0;
-                let totalItems = 0;
+                let totalSubtotal = 0;
+                let totalGST = 0;
                 let totalRevenue = 0;
                 let totalCost = 0;
                 let totalFullMRP = 0;
 
                 const profitData = [];
-                const revenueData = [];
+                const revenueCostData = [];
                 const productNames = [];
 
-                document.getElementById('profitTableBody').innerHTML = '';
+                const profitTableBody = document.getElementById('profitTableBody');
+                if (profitTableBody) profitTableBody.innerHTML = '';
 
                 if (bill && bill.items) {
                     bill.items.forEach(item => {
                         const mrp = item.mrp || item.price || 0;
                         const full_mrp_amount = mrp * item.quantity;
-                        const selling_amount = item.amount || (item.quantity * item.rate);
-                        const discount = full_mrp_amount - selling_amount;
+                        const subtotal = item.amount || (item.quantity * item.rate);
+                        const cgst = item.cgst || 0;
+                        const sgst = item.sgst || 0;
+                        const itemGST = cgst + sgst;
+                        const selling_amount = subtotal + itemGST;
 
-                        // Get scheme quantity
                         const scheme = parseFloat(item.scheme) || 0;
-
-                        // Calculate total units (sold + free)
                         const total_units = item.quantity + scheme;
 
-                        // KEEPING YOUR ORIGINAL FORMULA: cost = MRP * 0.3
                         const cost = mrp * 0.3;
-                        const profit = selling_amount - (cost * total_units); // Include scheme in cost calculation
-
+                        const profit = subtotal - (cost * total_units);
                         const marginOnMRP = full_mrp_amount > 0 ? (profit / full_mrp_amount * 100).toFixed(1) : 0;
 
                         totalProfit += profit;
-                        totalDiscount += discount;
-                        totalItems += item.quantity;
+                        totalSubtotal += subtotal;
+                        totalGST += itemGST;
                         totalRevenue += selling_amount;
                         totalCost += (cost * total_units);
                         totalFullMRP += full_mrp_amount;
 
                         profitData.push(profit);
-                        revenueData.push({
-                            revenue: selling_amount,
-                            cost: cost * total_units
+                        revenueCostData.push({
+                            revenue: subtotal,
+                            cost: cost * total_units,
+                            gst: itemGST
                         });
                         productNames.push(item.name);
 
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${item.name}</td>
-                            <td>${item.quantity}</td>
-                            <td>${scheme > 0 ? scheme : '0'}</td>
-                            <td>${item.size}</td>
-                            <td>₹${mrp.toFixed(2)}</td>
-                            <td>₹${(item.rate || 0).toFixed(2)}</td>
-                            <td>₹${selling_amount.toFixed(2)}</td>
-                            <td>₹${discount.toFixed(2)}</td>
-                            <td style="color: ${profit >= 0 ? 'var(--success)' : 'var(--danger)'}">₹${profit.toFixed(2)}</td>
-                            <td style="color: ${marginOnMRP >= 50 ? 'var(--success)' : 'var(--warning)'}">${marginOnMRP}%</td>
-                        `;
-                        document.getElementById('profitTableBody').appendChild(row);
+                        if (profitTableBody) {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${item.name}</td>
+                                <td>${item.quantity}</td>
+                                <td>${scheme > 0 ? '+' + scheme : '0'}</td>
+                                <td>${item.size || ''}</td>
+                                <td>₹${mrp.toFixed(2)}</td>
+                                <td>₹${(item.rate || 0).toFixed(2)}</td>
+                                <td>₹${subtotal.toFixed(2)}</td>
+                                <td>₹${cgst.toFixed(2)}</td>
+                                <td>₹${sgst.toFixed(2)}</td>
+                                <td>₹${selling_amount.toFixed(2)}</td>
+                                <td style="color: ${profit >= 0 ? 'var(--success)' : 'var(--danger)'}">₹${profit.toFixed(2)}</td>
+                                <td style="color: ${marginOnMRP >= 50 ? 'var(--success)' : 'var(--warning)'}">${marginOnMRP}%</td>
+                            `;
+                            profitTableBody.appendChild(row);
+                        }
                     });
                 }
 
-                // Update summary stats
-                document.getElementById('totalProfit').textContent = `₹${totalProfit.toFixed(2)}`;
-                document.getElementById('totalDiscount').textContent = `₹${totalDiscount.toFixed(2)}`;
-                document.getElementById('totalItems').textContent = totalItems;
-                const profitMargin = totalFullMRP > 0 ? ((totalProfit / totalFullMRP) * 100).toFixed(1) : 0;
-                document.getElementById('profitMargin').textContent = `${profitMargin}%`;
+                const totalProfitEl = document.getElementById('totalProfit');
+                const totalGSTEl = document.getElementById('totalGSTCollected');
+                const totalSubtotalEl = document.getElementById('totalSubtotal');
+                const totalRevenueEl = document.getElementById('totalRevenue');
 
-                // Update overall profit for this bill
+                if (totalProfitEl) totalProfitEl.textContent = `₹${totalProfit.toFixed(2)}`;
+                if (totalGSTEl) totalGSTEl.textContent = `₹${totalGST.toFixed(2)}`;
+                if (totalSubtotalEl) totalSubtotalEl.textContent = `₹${totalSubtotal.toFixed(2)}`;
+                if (totalRevenueEl) totalRevenueEl.textContent = `₹${totalRevenue.toFixed(2)}`;
+
                 billProfits[invoice_no] = totalProfit;
-                billDetails[invoice_no].totalFullMRP = totalFullMRP;
+                if (billDetails[invoice_no]) {
+                    billDetails[invoice_no].totalSubtotal = totalSubtotal;
+                    billDetails[invoice_no].totalGST = totalGST;
+                    billDetails[invoice_no].totalRevenue = totalRevenue;
+                    billDetails[invoice_no].totalFullMRP = totalFullMRP;
+                }
 
-                // Recalculate overall totals
                 calculateOverallTotals();
 
-                // Create charts
                 createProfitChart(profitData, productNames);
-                createRevenueChart(revenueData, productNames);
+                createRevenueChart(revenueCostData, productNames);
                 createTrendChart(profitData, productNames);
                 createHeatmapChart(profitData, productNames);
             } catch (error) {
@@ -1593,115 +1676,46 @@
             });
 
             setTimeout(() => {
-                detailsTable.classList.add('animate');
+                if (detailsTable) detailsTable.classList.add('animate');
             }, 700);
         }
 
-        // Create profit distribution chart
+        // Create profit distribution chart - ENHANCED with beautiful gradient colors
         function createProfitChart(profitData, labels) {
-            const ctx = document.getElementById('profitChart').getContext('2d');
+            const ctx = document.getElementById('profitChart');
+            if (!ctx) return;
+
+            const context = ctx.getContext('2d');
             if (profitChart) {
                 profitChart.destroy();
             }
 
-            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-            gradient.addColorStop(0, 'rgba(26, 115, 232, 0.8)');
-            gradient.addColorStop(1, 'rgba(108, 92, 231, 0.6)');
+            // Create gradient for positive profits (green to teal)
+            const positiveGradient = context.createLinearGradient(0, 0, 0, 300);
+            positiveGradient.addColorStop(0, 'rgba(46, 204, 113, 0.9)');
+            positiveGradient.addColorStop(0.5, 'rgba(39, 174, 96, 0.7)');
+            positiveGradient.addColorStop(1, 'rgba(27, 156, 79, 0.5)');
 
-            profitChart = new Chart(ctx, {
+            // Create gradient for negative profits (red to orange)
+            const negativeGradient = context.createLinearGradient(0, 0, 0, 300);
+            negativeGradient.addColorStop(0, 'rgba(231, 76, 60, 0.9)');
+            negativeGradient.addColorStop(0.5, 'rgba(211, 84, 0, 0.7)');
+            negativeGradient.addColorStop(1, 'rgba(192, 57, 43, 0.5)');
+
+            profitChart = new Chart(context, {
                 type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [{
                         label: 'Profit (₹)',
                         data: profitData,
-                        backgroundColor: profitData.map(p => p >= 0 ? gradient : 'rgba(234, 67, 53, 0.8)'),
-                        borderColor: profitData.map(p => p >= 0 ? 'rgba(26, 115, 232, 1)' : 'rgba(234, 67, 53, 1)'),
+                        backgroundColor: profitData.map(p => p >= 0 ? positiveGradient : negativeGradient),
+                        borderColor: profitData.map(p => p >= 0 ? '#27ae60' : '#e74c3c'),
                         borderWidth: 2,
-                        borderRadius: 8,
+                        borderRadius: 10,
                         borderSkipped: false,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                            titleFont: { size: 14 },
-                            bodyFont: { size: 13 },
-                            padding: 10,
-                            cornerRadius: 8
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            },
-                            ticks: {
-                                callback: function(value) {
-                                    return '₹' + value;
-                                }
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
-                    },
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeOutQuart'
-                    }
-                }
-            });
-        }
-
-        // Create revenue vs cost chart
-        function createRevenueChart(revenueData, labels) {
-            const ctx = document.getElementById('revenueChart').getContext('2d');
-            if (revenueChart) {
-                revenueChart.destroy();
-            }
-            const revenueValues = revenueData.map(d => d.revenue);
-            const costValues = revenueData.map(d => d.cost);
-
-            const revenueGradient = ctx.createLinearGradient(0, 0, 0, 300);
-            revenueGradient.addColorStop(0, 'rgba(26, 115, 232, 0.8)');
-            revenueGradient.addColorStop(1, 'rgba(26, 115, 232, 0.2)');
-
-            const costGradient = ctx.createLinearGradient(0, 0, 0, 300);
-            costGradient.addColorStop(0, 'rgba(108, 92, 231, 0.8)');
-            costGradient.addColorStop(1, 'rgba(108, 92, 231, 0.2)');
-
-            revenueChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Revenue',
-                        data: revenueValues,
-                        backgroundColor: revenueGradient,
-                        borderColor: 'rgba(26, 115, 232, 1)',
-                        borderWidth: 2,
-                        borderRadius: 8,
-                        borderSkipped: false,
-                    }, {
-                        label: 'Cost',
-                        data: costValues,
-                        backgroundColor: costGradient,
-                        borderColor: 'rgba(108, 92, 231, 1)',
-                        borderWidth: 2,
-                        borderRadius: 8,
-                        borderSkipped: false,
+                        hoverBackgroundColor: profitData.map(p => p >= 0 ? '#2ecc71' : '#e74c3c'),
+                        hoverBorderWidth: 3,
                     }]
                 },
                 options: {
@@ -1710,72 +1724,279 @@
                     plugins: {
                         legend: {
                             display: true,
-                            position: 'top'
+                            position: 'top',
+                            labels: {
+                                font: { size: 12, weight: 'bold' },
+                                usePointStyle: true,
+                                boxWidth: 10
+                            }
                         },
                         tooltip: {
                             mode: 'index',
                             intersect: false,
-                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                            titleFont: { size: 14 },
+                            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                            titleFont: { size: 14, weight: 'bold' },
                             bodyFont: { size: 13 },
-                            padding: 10,
-                            cornerRadius: 8
+                            padding: 12,
+                            cornerRadius: 10,
+                            displayColors: true,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    let value = context.raw;
+                                    let profitClass = value >= 0 ? '📈 Profit' : '📉 Loss';
+                                    return `${profitClass}: ₹${value.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)',
+                                drawBorder: true,
+                                drawOnChartArea: true,
+                            },
+                            title: {
+                                display: true,
+                                text: 'Profit Amount (₹)',
+                                font: { size: 12, weight: 'bold' },
+                                color: '#666'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString();
+                                },
+                                stepSize: Math.ceil(Math.max(...profitData, 0) / 5) || 50
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            title: {
+                                display: true,
+                                text: 'Products',
+                                font: { size: 12, weight: 'bold' },
+                                color: '#666'
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                autoSkip: true,
+                                font: { size: 10 }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeOutCubic',
+                        onComplete: function() {
+                            console.log('Profit chart animation completed');
+                        }
+                    },
+                    elements: {
+                        bar: {
+                            borderRadius: 10,
+                            borderSkipped: false,
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create revenue vs cost vs GST chart - ENHANCED with smoother animation
+        function createRevenueChart(data, labels) {
+            const ctx = document.getElementById('revenueChart');
+            if (!ctx) return;
+
+            const context = ctx.getContext('2d');
+            if (revenueChart) {
+                revenueChart.destroy();
+            }
+
+            // Create gradients for each dataset
+            const revenueGradient = context.createLinearGradient(0, 0, 0, 300);
+            revenueGradient.addColorStop(0, 'rgba(52, 152, 219, 0.9)');
+            revenueGradient.addColorStop(0.5, 'rgba(41, 128, 185, 0.7)');
+            revenueGradient.addColorStop(1, 'rgba(31, 97, 141, 0.5)');
+
+            const costGradient = context.createLinearGradient(0, 0, 0, 300);
+            costGradient.addColorStop(0, 'rgba(231, 76, 60, 0.9)');
+            costGradient.addColorStop(0.5, 'rgba(211, 84, 0, 0.7)');
+            costGradient.addColorStop(1, 'rgba(169, 50, 38, 0.5)');
+
+            const gstGradient = context.createLinearGradient(0, 0, 0, 300);
+            gstGradient.addColorStop(0, 'rgba(241, 196, 15, 0.9)');
+            gstGradient.addColorStop(0.5, 'rgba(243, 156, 18, 0.7)');
+            gstGradient.addColorStop(1, 'rgba(211, 84, 0, 0.5)');
+
+            revenueChart = new Chart(context, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '💰 Revenue (Excl. GST)',
+                            data: data.map(d => d.revenue),
+                            backgroundColor: revenueGradient,
+                            borderColor: '#2980b9',
+                            borderWidth: 2,
+                            borderRadius: 10,
+                            borderSkipped: false,
+                            hoverBackgroundColor: '#3498db',
+                            hoverBorderWidth: 3,
+                        },
+                        {
+                            label: '📦 Cost (30% of MRP)',
+                            data: data.map(d => d.cost),
+                            backgroundColor: costGradient,
+                            borderColor: '#c0392b',
+                            borderWidth: 2,
+                            borderRadius: 10,
+                            borderSkipped: false,
+                            hoverBackgroundColor: '#e74c3c',
+                            hoverBorderWidth: 3,
+                        },
+                        {
+                            label: '📊 GST Collected',
+                            data: data.map(d => d.gst),
+                            backgroundColor: gstGradient,
+                            borderColor: '#d35400',
+                            borderWidth: 2,
+                            borderRadius: 10,
+                            borderSkipped: false,
+                            hoverBackgroundColor: '#f1c40f',
+                            hoverBorderWidth: 3,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: { size: 11, weight: 'bold' },
+                                usePointStyle: true,
+                                boxWidth: 12,
+                                padding: 15,
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            padding: 12,
+                            cornerRadius: 10,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    let value = context.raw;
+                                    return `${label}: ₹${value.toFixed(2)}`;
+                                },
+                                footer: function(tooltipItems) {
+                                    let sum = 0;
+                                    tooltipItems.forEach(item => {
+                                        sum += item.raw;
+                                    });
+                                    return `Total: ₹${sum.toFixed(2)}`;
+                                }
+                            }
                         }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
                             grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
+                                color: 'rgba(0, 0, 0, 0.05)',
+                                drawBorder: true,
+                            },
+                            title: {
+                                display: true,
+                                text: 'Amount (₹)',
+                                font: { size: 12, weight: 'bold' },
+                                color: '#666'
                             },
                             ticks: {
                                 callback: function(value) {
-                                    return '₹' + value;
+                                    return '₹' + value.toLocaleString();
                                 }
                             }
                         },
                         x: {
-                            grid: {
-                                display: false
+                            grid: { display: false },
+                            title: {
+                                display: true,
+                                text: 'Products',
+                                font: { size: 12, weight: 'bold' },
+                                color: '#666'
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                autoSkip: true,
+                                font: { size: 10 }
                             }
                         }
                     },
                     animation: {
-                        duration: 1000,
-                        easing: 'easeOutQuart'
+                        duration: 2000,
+                        easing: 'easeOutCubic',
+                    },
+                    elements: {
+                        bar: {
+                            borderRadius: 10,
+                            borderSkipped: false,
+                        }
                     }
                 }
             });
         }
 
-        // Create trend analysis chart
+        // Create trend analysis chart - ENHANCED with buttery smooth animation
         function createTrendChart(profitData, labels) {
-            const ctx = document.getElementById('trendChart').getContext('2d');
+            const ctx = document.getElementById('trendChart');
+            if (!ctx) return;
+
+            const context = ctx.getContext('2d');
             if (trendChart) {
                 trendChart.destroy();
             }
 
-            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-            gradient.addColorStop(0, 'rgba(15, 157, 88, 0.3)');
-            gradient.addColorStop(1, 'rgba(15, 157, 88, 0.05)');
+            // Create gradient for area under line
+            const areaGradient = context.createLinearGradient(0, 0, 0, 300);
+            areaGradient.addColorStop(0, 'rgba(46, 204, 113, 0.4)');
+            areaGradient.addColorStop(0.5, 'rgba(46, 204, 113, 0.2)');
+            areaGradient.addColorStop(1, 'rgba(46, 204, 113, 0.05)');
 
-            trendChart = new Chart(ctx, {
+            trendChart = new Chart(context, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Profit Trend',
+                        label: '📈 Profit Trend',
                         data: profitData,
-                        backgroundColor: gradient,
-                        borderColor: 'rgba(15, 157, 88, 1)',
+                        backgroundColor: areaGradient,
+                        borderColor: '#27ae60',
                         borderWidth: 3,
-                        pointBackgroundColor: 'rgba(15, 157, 88, 1)',
+                        pointBackgroundColor: profitData.map(p => p >= 0 ? '#2ecc71' : '#e74c3c'),
                         pointBorderColor: '#fff',
                         pointBorderWidth: 2,
                         pointRadius: 6,
-                        pointHoverRadius: 8,
+                        pointHoverRadius: 10,
+                        pointHoverBackgroundColor: profitData.map(p => p >= 0 ? '#27ae60' : '#c0392b'),
                         fill: true,
-                        tension: 0.4
+                        tension: 0.4,
+                        segment: {
+                            borderColor: ctx => ctx.p0.raw >= 0 && ctx.p1.raw >= 0 ? '#27ae60' :
+                                        ctx.p0.raw < 0 && ctx.p1.raw < 0 ? '#e74c3c' : '#f39c12',
+                            backgroundColor: ctx => ctx.p0.raw >= 0 && ctx.p1.raw >= 0 ? 'rgba(46, 204, 113, 0.3)' :
+                                              ctx.p0.raw < 0 && ctx.p1.raw < 0 ? 'rgba(231, 76, 60, 0.3)' : 'rgba(243, 156, 18, 0.3)',
+                        }
                     }]
                 },
                 options: {
@@ -1783,76 +2004,132 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: false
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: { size: 12, weight: 'bold' },
+                                usePointStyle: true,
+                            }
                         },
                         tooltip: {
                             mode: 'index',
                             intersect: false,
-                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                            titleFont: { size: 14 },
+                            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                            titleFont: { size: 14, weight: 'bold' },
                             bodyFont: { size: 13 },
-                            padding: 10,
-                            cornerRadius: 8
+                            padding: 12,
+                            cornerRadius: 10,
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.raw;
+                                    let trend = value >= 0 ? '📈 Increasing' : '📉 Decreasing';
+                                    return `${trend}: ₹${value.toFixed(2)}`;
+                                }
+                            }
                         }
                     },
                     scales: {
                         y: {
-                            beginAtZero: true,
+                            beginAtZero: false,
                             grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
+                                color: 'rgba(0, 0, 0, 0.05)',
+                                drawBorder: true,
+                            },
+                            title: {
+                                display: true,
+                                text: 'Profit Amount (₹)',
+                                font: { size: 12, weight: 'bold' },
+                                color: '#666'
                             },
                             ticks: {
                                 callback: function(value) {
-                                    return '₹' + value;
+                                    return '₹' + value.toLocaleString();
                                 }
                             }
                         },
                         x: {
-                            grid: {
-                                display: false
+                            grid: { display: false },
+                            title: {
+                                display: true,
+                                text: 'Products',
+                                font: { size: 12, weight: 'bold' },
+                                color: '#666'
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                autoSkip: true,
+                                font: { size: 10 }
                             }
                         }
                     },
                     animation: {
-                        duration: 1500,
-                        easing: 'easeOutQuart'
+                        duration: 2500,
+                        easing: 'easeOutCubic',
+                    },
+                    elements: {
+                        line: {
+                            tension: 0.4,
+                            borderJoin: 'round',
+                            borderCap: 'round',
+                        },
+                        point: {
+                            hoverBorderWidth: 3,
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
                     }
                 }
             });
         }
 
-        // Create profitability heat map
+        // Create profitability heat map - FIXED: Clean labels, legend at bottom, NO overlapping text
         function createHeatmapChart(profitData, labels) {
-            const ctx = document.getElementById('heatmapChart').getContext('2d');
+            const ctx = document.getElementById('heatmapChart');
+            if (!ctx) return;
+
+            const context = ctx.getContext('2d');
             if (heatmapChart) {
                 heatmapChart.destroy();
             }
 
-            const bubbleData = profitData.map((profit, index) => {
-                return {
-                    x: index,
-                    y: profit,
-                    r: Math.abs(profit) / 10 + 10
-                };
+            // Create clean short labels (max 10 characters to prevent overlap)
+            const shortLabels = labels.map(label => {
+                if (label.length > 12) {
+                    return label.substring(0, 10) + '...';
+                }
+                return label;
             });
 
-            heatmapChart = new Chart(ctx, {
+            const bubbleData = profitData.map((profit, index) => ({
+                x: index,
+                y: profit,
+                r: Math.abs(profit) / 8 + 12,
+                profit: profit,
+                fullName: labels[index]
+            }));
+
+            heatmapChart = new Chart(context, {
                 type: 'bubble',
                 data: {
                     datasets: [{
-                        label: 'Profitability',
+                        label: 'Profitability Magnitude',
                         data: bubbleData,
                         backgroundColor: bubbleData.map(item => {
-                            if (item.y >= 0) {
-                                const opacity = Math.min(item.y / 100, 0.8);
-                                return `rgba(15, 157, 88, ${opacity})`;
-                            } else {
-                                const opacity = Math.min(Math.abs(item.y) / 100, 0.8);
-                                return `rgba(234, 67, 53, ${opacity})`;
-                            }
+                            if (item.y >= 100) return 'rgba(46, 204, 113, 0.85)';
+                            if (item.y >= 50) return 'rgba(39, 174, 96, 0.8)';
+                            if (item.y >= 10) return 'rgba(88, 214, 141, 0.7)';
+                            if (item.y > 0) return 'rgba(129, 236, 155, 0.6)';
+                            if (item.y >= -50) return 'rgba(230, 126, 34, 0.7)';
+                            return 'rgba(231, 76, 60, 0.85)';
                         }),
-                        borderColor: bubbleData.map(item => item.y >= 0 ? 'rgba(15, 157, 88, 1)' : 'rgba(234, 67, 53, 1)'),
-                        borderWidth: 1
+                        borderColor: bubbleData.map(item => item.y >= 0 ? '#27ae60' : '#e74c3c'),
+                        borderWidth: 2,
+                        hoverBackgroundColor: bubbleData.map(item => item.y >= 0 ? '#2ecc71' : '#e74c3c'),
+                        hoverBorderWidth: 3,
                     }]
                 },
                 options: {
@@ -1860,50 +2137,94 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: false
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 11, weight: 'bold' },
+                                generateLabels: function(chart) {
+                                    return [
+                                        { text: '🔴 High Loss (below -50)', fillStyle: 'rgba(231, 76, 60, 0.85)', hidden: false },
+                                        { text: '🟠 Low Loss (0 to -50)', fillStyle: 'rgba(230, 126, 34, 0.7)', hidden: false },
+                                        { text: '🟢 Low Profit (0-10)', fillStyle: 'rgba(129, 236, 155, 0.6)', hidden: false },
+                                        { text: '🟢 Medium Profit (10-50)', fillStyle: 'rgba(88, 214, 141, 0.7)', hidden: false },
+                                        { text: '✅ High Profit (50-100)', fillStyle: 'rgba(39, 174, 96, 0.8)', hidden: false },
+                                        { text: '🎯 Very High Profit (100+)', fillStyle: 'rgba(46, 204, 113, 0.85)', hidden: false }
+                                    ];
+                                }
+                            }
                         },
                         tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            padding: 10,
+                            cornerRadius: 10,
                             callbacks: {
+                                title: function(tooltipItems) {
+                                    return tooltipItems[0].raw.fullName;
+                                },
                                 label: function(context) {
                                     const data = context.raw;
-                                    return `${labels[data.x]}: ₹${data.y.toFixed(2)}`;
+                                    let profitability = data.profit >= 0 ? '💰 Profit' : '⚠️ Loss';
+                                    return `${profitability}: ₹${data.profit.toFixed(2)}`;
                                 }
-                            },
-                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                            titleFont: { size: 14 },
-                            bodyFont: { size: 13 },
-                            padding: 10,
-                            cornerRadius: 8
+                            }
                         }
                     },
                     scales: {
                         y: {
                             title: {
                                 display: true,
-                                text: 'Profit (₹)'
+                                text: 'Profit Amount (₹)',
+                                font: { size: 12, weight: 'bold' },
+                                color: '#666'
                             },
                             grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
+                                color: 'rgba(0, 0, 0, 0.05)',
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString();
+                                },
+                                stepSize: Math.ceil(Math.max(...profitData, 0) / 5) || 100
                             }
                         },
                         x: {
                             title: {
                                 display: true,
-                                text: 'Product Index'
+                                text: 'Products',
+                                font: { size: 12, weight: 'bold' },
+                                color: '#666'
                             },
-                            grid: {
-                                display: false
-                            },
+                            grid: { display: false },
                             ticks: {
                                 callback: function(value) {
-                                    return labels[value] || value;
-                                }
+                                    return shortLabels[value] || '';
+                                },
+                                maxRotation: 35,
+                                minRotation: 35,
+                                autoSkip: true,
+                                autoSkipPadding: 15,
+                                font: { size: 10 }
                             }
                         }
                     },
                     animation: {
-                        duration: 1000,
-                        easing: 'easeOutQuart'
+                        duration: 2000,
+                        easing: 'easeOutElastic',
+                    },
+                    elements: {
+                        bubble: {
+                            borderRadius: 20,
+                        }
+                    },
+                    layout: {
+                        padding: {
+                            top: 20,
+                            bottom: 30,
+                            left: 15,
+                            right: 15
+                        }
                     }
                 }
             });
@@ -1912,44 +2233,37 @@
         // Close profit modal
         function closeProfitModal() {
             const modal = document.getElementById('profitModal');
-            modal.classList.remove('show');
+            if (modal) modal.classList.remove('show');
 
             const animatedElements = document.querySelectorAll('.stat-box, .chart-wrapper, .details-table');
             animatedElements.forEach(el => {
                 el.classList.remove('animate');
             });
 
-            document.getElementById('profitTableBody').innerHTML = '';
+            const profitTableBody = document.getElementById('profitTableBody');
+            if (profitTableBody) profitTableBody.innerHTML = '';
 
-            if (profitChart) {
-                profitChart.destroy();
-                profitChart = null;
-            }
-            if (revenueChart) {
-                revenueChart.destroy();
-                revenueChart = null;
-            }
-            if (trendChart) {
-                trendChart.destroy();
-                trendChart = null;
-            }
-            if (heatmapChart) {
-                heatmapChart.destroy();
-                heatmapChart = null;
-            }
+            if (profitChart) { profitChart.destroy(); profitChart = null; }
+            if (revenueChart) { revenueChart.destroy(); revenueChart = null; }
+            if (trendChart) { trendChart.destroy(); trendChart = null; }
+            if (heatmapChart) { heatmapChart.destroy(); heatmapChart = null; }
 
-            document.getElementById('loadingIndicator').style.display = 'none';
-            document.getElementById('profitContent').style.display = 'block';
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const profitContent = document.getElementById('profitContent');
+
+            if (loadingIndicator) loadingIndicator.style.display = 'none';
+            if (profitContent) profitContent.style.display = 'block';
         }
 
-// Add this to both reports.html and profit.html
+        // Navigation function
         function selectMenu(menu) {
             const menuItems = document.querySelectorAll('.menu-item');
             menuItems.forEach(item => item.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
 
             if (menu === 'inventory') {
-                // Navigate to billing page with hash to show inventory modal
                 window.location.href = '/billing#show-inventory';
             } else if (menu === 'dashboard') {
                 window.location.href = '/billing';
@@ -1958,67 +2272,14 @@
             } else if (menu === 'profit') {
                 window.location.href = '/profit';
             } else if (menu === 'logout') {
-                window.location.href = '/logout';
-            }
-        }
-
-        // Show stats modal
-        function showStatsModal() {
-            const totalMedicines = medicines.length;
-            const totalVariants = medicines.reduce((sum, medicine) => sum + medicine.variants.length, 0);
-            const totalStock = medicines.reduce((sum, medicine) => {
-                return sum + medicine.variants.reduce((vSum, variant) => vSum + variant.stock, 0);
-            }, 0);
-
-            const today = new Date();
-            const expiringSoon = medicines.reduce((count, medicine) => {
-                return count + medicine.variants.filter(variant => {
-                    if (!variant.expiry) return false;
-                    const expiryDate = new Date(variant.expiry);
-                    const diffTime = expiryDate - today;
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    return diffDays <= 30 && diffDays >= 0;
-                }).length;
-            }, 0);
-
-            document.getElementById('totalMedicines').textContent = totalMedicines;
-            document.getElementById('totalVariants').textContent = totalVariants;
-            document.getElementById('totalStock').textContent = totalStock;
-            document.getElementById('expiringSoon').textContent = expiringSoon;
-
-            const categoryStats = {};
-            medicines.forEach(medicine => {
-                if (!categoryStats[medicine.category]) {
-                    categoryStats[medicine.category] = 0;
+                if (confirm('Are you sure you want to logout?')) {
+                    window.location.href = '/logout';
                 }
-                categoryStats[medicine.category]++;
-            });
-
-            const categoryStatsContainer = document.getElementById('categoryStats');
-            categoryStatsContainer.innerHTML = '';
-
-            for (const category in categoryStats) {
-                const statRow = document.createElement('div');
-                statRow.style.display = 'flex';
-                statRow.style.justifyContent = 'space-between';
-                statRow.style.padding = '10px 0';
-                statRow.style.borderBottom = '1px solid #eee';
-
-                statRow.innerHTML = `
-                    <div>${category}</div>
-                    <div><strong>${categoryStats[category]}</strong> medicines</div>
-                `;
-
-                categoryStatsContainer.appendChild(statRow);
             }
-
-            document.getElementById('statsModal').style.display = 'block';
         }
 
-        // Close stats modal
-        function closeStatsModal() {
-            document.getElementById('statsModal').style.display = 'none';
-        }
+        // Start the app
+        initializeApp();
     </script>
 </body>
 </html>

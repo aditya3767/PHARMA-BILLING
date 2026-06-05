@@ -305,9 +305,9 @@
 
         /* Invoice No Column - DARKER BLUE as requested */
         .invoice-no-link {
-            color: #1565c0; /* Darker blue */
+            color: #1565c0;
             text-decoration: underline !important;
-            text-decoration-color: #1565c0 !important; /* Darker blue underline */
+            text-decoration-color: #1565c0 !important;
             font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
@@ -316,7 +316,7 @@
         }
 
         .invoice-no-link:hover {
-            color: #0d47a1; /* Even darker on hover */
+            color: #0d47a1;
             text-decoration: underline !important;
             text-decoration-thickness: 2px;
         }
@@ -693,7 +693,7 @@
             padding: 0;
             border-radius: var(--border-radius);
             width: 95%;
-            max-width: 1000px;
+            max-width: 1200px;
             box-shadow: var(--box-shadow);
             animation: slideIn 0.3s ease;
             position: relative;
@@ -763,6 +763,17 @@
             margin-bottom: 10px;
         }
 
+        .gst-breakdown {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .gst-breakdown span {
+            display: block;
+            margin-top: 3px;
+        }
+
         .bill-details {
             padding: 30px;
         }
@@ -793,6 +804,26 @@
 
         .bill-items-table tr:hover {
             background-color: rgba(26, 115, 232, 0.05);
+        }
+
+        /* Tax Summary Row in Modal */
+        .tax-summary {
+            margin-top: 20px;
+            padding: 15px;
+            background: var(--primary-light);
+            border-radius: var(--border-radius);
+            display: flex;
+            justify-content: flex-end;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tax-item {
+            text-align: right;
+        }
+
+        .tax-item strong {
+            color: var(--primary);
         }
 
         /* Animations */
@@ -940,7 +971,7 @@
                     <span>Inventory</span>
                 </div>
                 <div class="menu-item" onclick="selectMenu('profit')">
-                    <i class="fas fa-receipt"></i>
+                    <i class="fas fa-chart-line"></i>
                     <span>Profit</span>
                 </div>
                 <div class="menu-item active" onclick="selectMenu('reports')">
@@ -1138,6 +1169,7 @@
                 </div>
                 <div class="bill-summary">
                     <div class="bill-total" id="modalTotal">₹0.00</div>
+                    <div class="gst-breakdown" id="modalGSTBreakdown"></div>
                 </div>
             </div>
             <div class="bill-details">
@@ -1161,6 +1193,7 @@
                         <!-- Details will be populated here -->
                     </tbody>
                 </table>
+                <div class="tax-summary" id="modalTaxSummary"></div>
             </div>
         </div>
     </div>
@@ -1190,7 +1223,6 @@
             const yearFilter = document.getElementById('yearFilter');
             const currentYear = new Date().getFullYear();
 
-            // Add last 5 years and next 5 years
             for (let year = currentYear - 0; year <= currentYear + 9; year++) {
                 const option = document.createElement('option');
                 option.value = year;
@@ -1198,7 +1230,6 @@
                 yearFilter.appendChild(option);
             }
 
-            // Set current year as default
             yearFilter.value = currentYear;
             selectedYear = currentYear;
         }
@@ -1231,6 +1262,24 @@
             document.getElementById('loadingOverlay').classList.remove('active');
         }
 
+        // Format date with time for display - SHOW TIME FOR ALL BILLS THAT HAVE TIME (both AM and PM)
+        function formatDateForDisplay(dateString, timeString) {
+            const today = new Date().toISOString().split('T')[0];
+
+            if (dateString === today) {
+                // Today's bill - show "Today (date time)" if time exists
+                if (timeString && timeString.trim() !== '') {
+                    return `Today (${dateString} ${timeString})`;
+                }
+                return `Today (${dateString})`;
+            }
+            // Past bills - show date with time if time exists
+            if (timeString && timeString.trim() !== '') {
+                return `${dateString} ${timeString}`;
+            }
+            return dateString;
+        }
+
         // Fetch bills from the backend
         async function fetchBills() {
             try {
@@ -1245,7 +1294,6 @@
 
                 bills = await response.json();
 
-                // Fast sorting
                 bills.sort((a, b) => {
                     const dateDiff = new Date(b.date) - new Date(a.date);
                     return dateDiff !== 0 ? dateDiff : b.invoice_no - a.invoice_no;
@@ -1275,7 +1323,6 @@
 
                 bills = await response.json();
 
-                // Sort by date
                 bills.sort((a, b) => new Date(b.date) - new Date(a.date));
                 filteredBills = [...bills];
 
@@ -1304,7 +1351,6 @@
                 return;
             }
 
-            // Update time filter display
             document.getElementById('timeFilter').value = 'all';
             currentTimeFilter = 'all';
             currentCustomDate = '';
@@ -1315,12 +1361,17 @@
 
         // Update summary cards with bill statistics
         function updateSummaryCards() {
-            if (bills.length === 0) return;
+            if (bills.length === 0) {
+                document.getElementById('totalBills').textContent = '0';
+                document.getElementById('totalRevenue').textContent = '₹0';
+                document.getElementById('todayBills').textContent = '0';
+                document.getElementById('monthBills').textContent = '0';
+                return;
+            }
 
             const totalBills = bills.length;
-            const totalRevenue = bills.reduce((sum, bill) => sum + bill.total_amount, 0);
+            const totalRevenue = bills.reduce((sum, bill) => sum + (bill.total_amount || 0), 0);
 
-            // Fast date calculations
             const today = new Date().toISOString().split('T')[0];
             const todayBills = bills.filter(bill => bill.date === today).length;
 
@@ -1343,7 +1394,6 @@
             currentCustomDate = '';
             document.getElementById('customDate').value = '';
 
-            // Reset month filter
             selectedYear = '';
             selectedMonth = '';
             document.getElementById('yearFilter').value = '';
@@ -1360,7 +1410,6 @@
                 currentTimeFilter = 'custom';
                 document.getElementById('timeFilter').value = 'custom';
 
-                // Reset month filter
                 selectedYear = '';
                 selectedMonth = '';
                 document.getElementById('yearFilter').value = '';
@@ -1375,7 +1424,6 @@
             const amountRangeInput = document.getElementById('amountRange').value.trim();
 
             if (amountRangeInput) {
-                // Validate format (e.g., "0-500", "500-9000")
                 const rangeRegex = /^(\d+)-(\d+)$/;
                 const match = amountRangeInput.match(rangeRegex);
 
@@ -1426,22 +1474,19 @@
             currentSort = document.getElementById('sortBy').value;
 
             filteredBills = bills.filter(bill => {
-                // Fast search
                 const matchesSearch = searchTerm === '' ||
                     bill.invoice_no.toString().includes(searchTerm) ||
-                    bill.customer_name.toLowerCase().includes(searchTerm);
+                    (bill.customer_name && bill.customer_name.toLowerCase().includes(searchTerm));
 
-                // Apply custom amount range filter
                 let matchesAmountRange = true;
                 if (customAmountRange) {
-                    const amount = bill.total_amount;
+                    const amount = bill.total_amount || 0;
                     matchesAmountRange = amount >= customAmountRange.min && amount <= customAmountRange.max;
                 }
 
                 return matchesSearch && matchesAmountRange;
             });
 
-            // Apply sorting
             sortBills(filteredBills, currentSort);
             displayBillsTable(filteredBills);
         }
@@ -1454,60 +1499,62 @@
                 case 'date-asc':
                     return bills.sort((a, b) => new Date(a.date) - new Date(b.date) || a.invoice_no - b.invoice_no);
                 case 'amount-desc':
-                    return bills.sort((a, b) => b.total_amount - a.total_amount);
+                    return bills.sort((a, b) => (b.total_amount || 0) - (a.total_amount || 0));
                 case 'amount-asc':
-                    return bills.sort((a, b) => a.total_amount - b.total_amount);
+                    return bills.sort((a, b) => (a.total_amount || 0) - (b.total_amount || 0));
                 default:
                     return bills;
             }
         }
 
-        // Display bills in table
+        // Display bills in table with date/time formatting
         function displayBillsTable(bills) {
             const tableBody = document.getElementById('billsTableBody');
             const fragment = document.createDocumentFragment();
-            const today = new Date().toISOString().split('T')[0];
 
-            bills.forEach(bill => {
+            if (!bills || bills.length === 0) {
                 const row = document.createElement('tr');
-
-                // Invoice No cell with DARKER BLUE underline
-                const invoiceCell = document.createElement('td');
-                invoiceCell.innerHTML = `
-                    <span class="invoice-no-link" onclick="showBillDetails(${bill.invoice_no})">
-                        ${bill.invoice_no}
-                    </span>
-                `;
-                row.appendChild(invoiceCell);
-
-                // Date cell
-                const dateCell = document.createElement('td');
-                dateCell.textContent = bill.date === today ? `Today (${bill.date})` : bill.date;
-                row.appendChild(dateCell);
-
-                // Customer name cell
-                const customerCell = document.createElement('td');
-                customerCell.textContent = bill.customer_name;
-                row.appendChild(customerCell);
-
-                // Amount cell
-                const amountCell = document.createElement('td');
-                amountCell.textContent = `₹${bill.total_amount.toFixed(2)}`;
-                row.appendChild(amountCell);
-
-                // Action cell with delete button on right side
-                const actionCell = document.createElement('td');
-                actionCell.innerHTML = `
-                    <div class="action-buttons">
-                        <button class="delete-btn" onclick="showDeleteConfirmation(${bill.invoice_no}, '${bill.customer_name}')">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>
-                `;
-                row.appendChild(actionCell);
-
+                row.innerHTML = '<td colspan="5" style="text-align: center;">No bills found</td>';
                 fragment.appendChild(row);
-            });
+            } else {
+                bills.forEach(bill => {
+                    const row = document.createElement('tr');
+
+                    const invoiceCell = document.createElement('td');
+                    invoiceCell.innerHTML = `
+                        <span class="invoice-no-link" onclick="showBillDetails(${bill.invoice_no})">
+                            ${bill.invoice_no}
+                        </span>
+                    `;
+                    row.appendChild(invoiceCell);
+
+                    const dateCell = document.createElement('td');
+                    // Format date with time for ALL bills that have time
+                    const formattedDate = formatDateForDisplay(bill.date, bill.time);
+                    dateCell.textContent = formattedDate;
+                    row.appendChild(dateCell);
+
+                    const customerCell = document.createElement('td');
+                    customerCell.textContent = bill.customer_name || 'Walk-in Customer';
+                    row.appendChild(customerCell);
+
+                    const amountCell = document.createElement('td');
+                    amountCell.textContent = `₹${(bill.total_amount || 0).toFixed(2)}`;
+                    row.appendChild(amountCell);
+
+                    const actionCell = document.createElement('td');
+                    actionCell.innerHTML = `
+                        <div class="action-buttons">
+                            <button class="delete-btn" onclick="showDeleteConfirmation(${bill.invoice_no}, '${bill.customer_name || 'Walk-in Customer'}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    `;
+                    row.appendChild(actionCell);
+
+                    fragment.appendChild(row);
+                });
+            }
 
             tableBody.innerHTML = '';
             tableBody.appendChild(fragment);
@@ -1544,7 +1591,6 @@
             selectedYear = '';
             selectedMonth = '';
 
-            // Reset to original bills
             filteredBills = [...bills];
             displayBillsTable(filteredBills);
             updateSummaryCards();
@@ -1583,11 +1629,9 @@
 
                 const result = await response.json();
                 if (result.success) {
-                    // Remove bill from arrays
                     bills = bills.filter(bill => bill.invoice_no !== deleteInvoiceNo);
                     filteredBills = filteredBills.filter(bill => bill.invoice_no !== deleteInvoiceNo);
 
-                    // Update UI
                     displayBillsTable(filteredBills);
                     updateSummaryCards();
 
@@ -1605,7 +1649,7 @@
             }
         }
 
-        // Show bill details in modal
+        // Show bill details in modal with saved CGST/SGST values
         async function showBillDetails(invoice_no) {
             try {
                 showLoading();
@@ -1614,38 +1658,102 @@
 
                 const bill = await response.json();
 
-                // Populate modal
                 document.getElementById('modalInvoiceNo').textContent = bill.invoice_no;
-                document.getElementById('modalDate').textContent = bill.date;
-                document.getElementById('modalCustomer').textContent = bill.customer_name;
-                document.getElementById('modalTotal').textContent = `₹${bill.total_amount.toFixed(2)}`;
+
+                // Format date in modal with time if available
+                const today = new Date().toISOString().split('T')[0];
+                let formattedModalDate = bill.date;
+                if (bill.date === today && bill.time && bill.time.trim() !== '') {
+                    formattedModalDate = `Today (${bill.date} ${bill.time})`;
+                } else if (bill.time && bill.time.trim() !== '') {
+                    formattedModalDate = `${bill.date} ${bill.time}`;
+                }
+                document.getElementById('modalDate').textContent = formattedModalDate;
+                document.getElementById('modalCustomer').textContent = bill.customer_name || 'Walk-in Customer';
+
+                // USE SAVED VALUES from the bill data
+                const totalAmount = bill.total_amount || 0;
+                const cgst = bill.total_cgst || 0;
+                const sgst = bill.total_sgst || 0;
+                const grandTotal = totalAmount + cgst + sgst;
+
+                document.getElementById('modalTotal').textContent = `₹${grandTotal.toFixed(2)}`;
+
+                // Show GST breakdown
+                if (cgst === 0 && sgst === 0) {
+                    document.getElementById('modalGSTBreakdown').innerHTML = `
+                        <span>Subtotal: ₹${totalAmount.toFixed(2)}</span>
+                        <span>CGST (2.5%): ₹0.00 (Disabled)</span>
+                        <span>SGST (2.5%): ₹0.00 (Disabled)</span>
+                    `;
+                } else {
+                    document.getElementById('modalGSTBreakdown').innerHTML = `
+                        <span>Subtotal: ₹${totalAmount.toFixed(2)}</span>
+                        <span>CGST (2.5%): ₹${cgst.toFixed(2)}</span>
+                        <span>SGST (2.5%): ₹${sgst.toFixed(2)}</span>
+                    `;
+                }
 
                 const detailsBody = document.getElementById('modalDetailsBody');
                 detailsBody.innerHTML = '';
 
-                bill.items.forEach(item => {
-                    const expiryDate = item.expiry ? new Date(item.expiry).toLocaleDateString('en-IN') : 'N/A';
-                    const schemeDisplay = item.scheme || '';
-                    const discountDisplay = item.additionalDiscount > 0 ? item.additionalDiscount.toFixed(1) + '%' : '';
+                if (bill.items && bill.items.length > 0) {
+                    bill.items.forEach(item => {
+                        const expiryDate = item.expiry ? new Date(item.expiry).toLocaleDateString('en-IN') : 'N/A';
+                        const schemeDisplay = item.scheme || '';
+                        const discountDisplay = item.additionalDiscount > 0 ? item.additionalDiscount.toFixed(1) + '%' : '';
 
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${item.mfg || 'WDPL'}</td>
-                        <td>${item.name}</td>
-                        <td>${item.quantity}</td>
-                        <td>${schemeDisplay}</td>
-                        <td>${item.size}</td>
-                        <td>${item.batch || 'N/A'}</td>
-                        <td>${expiryDate}</td>
-                        <td>₹${item.mrp.toFixed(2)}</td>
-                        <td>₹${item.rate.toFixed(2)}</td>
-                        <td>${discountDisplay}</td>
-                        <td>₹${item.amount.toFixed(2)}</td>
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${item.mfg || 'WDPL'}</td>
+                            <td>${item.name}</td>
+                            <td>${item.quantity}</td>
+                            <td>${schemeDisplay}</td>
+                            <td>${item.size || ''}</td>
+                            <td>${item.batch || 'N/A'}</td>
+                            <td>${expiryDate}</td>
+                            <td>₹${(item.mrp || 0).toFixed(2)}</td>
+                            <td>₹${(item.rate || 0).toFixed(2)}</td>
+                            <td>${discountDisplay}</td>
+                            <td>₹${(item.amount || 0).toFixed(2)}</td>
+                        `;
+                        detailsBody.appendChild(row);
+                    });
+                }
+
+                const taxSummary = document.getElementById('modalTaxSummary');
+                if (cgst === 0 && sgst === 0) {
+                    taxSummary.innerHTML = `
+                        <div class="tax-item">
+                            <strong>Subtotal:</strong> ₹${totalAmount.toFixed(2)}
+                        </div>
+                        <div class="tax-item">
+                            <strong>CGST (2.5%):</strong> ₹0.00 (Disabled)
+                        </div>
+                        <div class="tax-item">
+                            <strong>SGST (2.5%):</strong> ₹0.00 (Disabled)
+                        </div>
+                        <div class="tax-item">
+                            <strong>Grand Total:</strong> ₹${grandTotal.toFixed(2)}
+                        </div>
                     `;
-                    detailsBody.appendChild(row);
-                });
+                } else {
+                    taxSummary.innerHTML = `
+                        <div class="tax-item">
+                            <strong>Subtotal:</strong> ₹${totalAmount.toFixed(2)}
+                        </div>
+                        <div class="tax-item">
+                            <strong>CGST (2.5%):</strong> ₹${cgst.toFixed(2)}
+                        </div>
+                        <div class="tax-item">
+                            <strong>SGST (2.5%):</strong> ₹${sgst.toFixed(2)}
+                        </div>
+                        <div class="tax-item">
+                            <strong>Grand Total:</strong> ₹${grandTotal.toFixed(2)}
+                        </div>
+                    `;
+                }
 
-                // Show modal
                 document.getElementById('billModal').style.display = 'block';
             } catch (error) {
                 console.error('Error fetching bill details:', error);
@@ -1660,14 +1768,15 @@
             document.getElementById('billModal').style.display = 'none';
         }
 
-        // Add this to both reports.html and profit.html
+        // Navigate to different pages
         function selectMenu(menu) {
             const menuItems = document.querySelectorAll('.menu-item');
             menuItems.forEach(item => item.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
 
             if (menu === 'inventory') {
-                // Navigate to billing page with hash to show inventory modal
                 window.location.href = '/billing#show-inventory';
             } else if (menu === 'dashboard') {
                 window.location.href = '/billing';
@@ -1676,7 +1785,9 @@
             } else if (menu === 'profit') {
                 window.location.href = '/profit';
             } else if (menu === 'logout') {
-                window.location.href = '/logout';
+                if (confirm('Are you sure you want to logout?')) {
+                    window.location.href = '/logout';
+                }
             }
         }
 
@@ -1684,7 +1795,7 @@
         window.addEventListener('load', function() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('customDate').max = today;
-            document.getElementById('customDate').value = today;
+            document.getElementById('customDate').value = '';
         });
     </script>
 </body>

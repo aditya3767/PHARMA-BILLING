@@ -600,8 +600,14 @@ def save_bill():
         if existing:
             return jsonify({'error': 'Invoice number already exists'}), 400
 
-        # Add timestamp to bill data
-        data['created_at'] = datetime.now()
+        # Add current date and time to the bill data
+        now = datetime.now()
+        data['created_at'] = now
+        # Store date as YYYY-MM-DD (for filtering)
+        data['date'] = now.strftime('%Y-%m-%d')
+        # Store time as HH:MM:SS AM/PM format (for display in reports)
+        data['time'] = now.strftime('%I:%M:%S %p')
+
         bills_collection.insert_one(data)
 
         return jsonify({'message': 'Bill saved successfully'}), 200
@@ -737,24 +743,19 @@ def save_invoice_pdf():
         return jsonify({'error': f'Failed to save PDF: {str(e)}'}), 500
 
 
-# Medicine data endpoints
 @app.route('/api/medicines', methods=['GET'])
 @login_required
 def get_medicines():
     try:
-        # Get search and filter parameters
         search_term = request.args.get('search', '')
         category_filter = request.args.get('category', 'all')
 
-        # Get medicines from MongoDB
         medicines = list(medicines_collection.find({}, {'_id': 0}))
 
-        # If no medicines in DB, initialize with default data
         if not medicines:
             medicines_collection.insert_many(default_medicines_data)
             medicines = default_medicines_data
 
-        # Apply filters
         filtered_medicines = medicines
 
         if search_term:
@@ -866,12 +867,10 @@ def get_notifications():
 @app.route('/api/customers', methods=['GET'])
 @login_required
 def get_customers():
-    """Get all customers from database"""
     try:
         search_term = request.args.get('search', '').strip()
 
         if search_term:
-            # Search customers by name or phone
             customers = list(customers_collection.find({
                 '$or': [
                     {'name': {'$regex': search_term, '$options': 'i'}},
@@ -879,10 +878,8 @@ def get_customers():
                 ]
             }).sort('name', 1))
         else:
-            # Get all customers sorted by name
             customers = list(customers_collection.find({}).sort('name', 1))
 
-        # Convert ObjectId to string for JSON serialization
         for customer in customers:
             customer['_id'] = str(customer['_id'])
 
