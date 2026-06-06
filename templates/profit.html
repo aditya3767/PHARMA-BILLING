@@ -873,6 +873,18 @@
             color: var(--primary);
             font-weight: 500;
         }
+
+        /* Loading spinner for profit loading */
+        .profit-loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 8px;
+        }
     </style>
 </head>
 <body>
@@ -1048,7 +1060,7 @@
                             </tr>
                         </thead>
                         <tbody id="billsTableBody">
-                            <!-- Bills will be populated here -->
+                            <tr><td colspan="7" style="text-align: center;">Loading bills...<\/td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1164,6 +1176,7 @@
         let overallTotalGST = 0;
         let billProfits = {};
         let billDetails = {};
+        let loadingPromises = {};
 
         // Initialize the profit page
         async function initializeApp() {
@@ -1172,6 +1185,8 @@
                 await fetchMedicines();
                 await preloadBillDetails();
                 filterBills();
+                // Start background loading of all profits
+                loadAllProfitsInBackground();
             } catch (error) {
                 console.error('Initialization error:', error);
             } finally {
@@ -1201,7 +1216,7 @@
 
                 // Initialize bill profits
                 bills.forEach(bill => {
-                    billProfits[bill.invoice_no] = 0;
+                    billProfits[bill.invoice_no] = null; // null means not loaded yet
                 });
             } catch (error) {
                 console.error('Error fetching bills:', error);
@@ -1209,41 +1224,111 @@
             }
         }
 
-        // Preload all bill details to calculate profits
-        async function preloadBillDetails() {
-            try {
-                const loadingIndicator = document.getElementById('loadingIndicator');
-                if (loadingIndicator) loadingIndicator.style.display = 'flex';
-
-                // Fetch all bill details in parallel
-                const billDetailPromises = bills.map(bill =>
-                    fetch(`/api/bill/${bill.invoice_no}`).then(res => {
-                        if (!res.ok) {
-                            throw new Error(`Failed to fetch bill ${bill.invoice_no}`);
-                        }
-                        return res.json();
-                    })
-                );
-
-                const billDetailsArray = await Promise.all(billDetailPromises);
-
-                // Calculate profits for all bills
-                billDetailsArray.forEach(billDetail => {
-                    billDetails[billDetail.invoice_no] = billDetail;
-                    calculateBillProfit(billDetail.invoice_no, billDetail);
-                });
-
-                // Calculate overall totals
-                calculateOverallTotals();
-
-                if (loadingIndicator) loadingIndicator.style.display = 'none';
-            } catch (error) {
-                console.error('Error preloading bill details:', error);
-                if (loadingIndicator) loadingIndicator.style.display = 'none';
+        // Load all profits in background without blocking UI
+        async function loadAllProfitsInBackground() {
+            console.log('Loading all profits in background...');
+            for (const bill of bills) {
+                if (billProfits[bill.invoice_no] === null) {
+                    loadSingleBillProfit(bill.invoice_no);
+                }
             }
         }
 
-        // Calculate profit for a specific bill - Cost = MRP × 0.3 (70% margin)
+        // Load a single bill profit and update the row
+        async function loadSingleBillProfit(invoice_no) {
+            if (loadingPromises[invoice_no]) return loadingPromises[invoice_no];
+
+            loadingPromises[invoice_no] = (async () => {
+                try {
+                    const response = await fetch(`/api/bill/${invoice_no}`);
+                    if (!response.ok) throw new Error('Failed to fetch bill details');
+                    const bill = await response.json();
+
+                    // Calculate profit
+                    let totalProfit = 0;
+                    let totalSubtotal = 0;
+                    let totalGST = 0;
+                    let totalRevenue = 0;
+                    let totalFullMRP = 0;
+
+                    if (bill && bill.items) {
+                        bill.items.forEach(item => {
+                            const mrp = item.mrp || item.price || 0;
+                            const full_mrp_amount = mrp * item.quantity;
+                            const subtotal_amount = item.amount || (item.quantity * item.rate);
+                            const cgst = item.cgst || 0;
+                            const sgst = item.sgst || 0;
+                            const itemGST = cgst + sgst;
+                            const selling_amount = subtotal_amount + itemGST;
+                            const scheme = parseFloat(item.scheme) || 0;
+                            const total_units = item.quantity + scheme;
+                            const cost = mrp * 0.3;
+                            const profit = subtotal_amount - (cost * total_units);
+
+                            totalProfit += profit;
+                            totalSubtotal += subtotal_amount;
+                            totalGST += itemGST;
+                            totalRevenue += selling_amount;
+                            totalFullMRP += full_mrp_amount;
+                        });
+                    }
+
+                    billProfits[invoice_no] = totalProfit;
+                    billDetails[invoice_no] = {
+                        totalSubtotal: totalSubtotal,
+                        totalGST: totalGST,
+                        totalRevenue: totalRevenue,
+                        totalFullMRP: totalFullMRP
+                    };
+
+                    // Update the row in the table
+                    updateBillRowProfit(invoice_no);
+
+                    // Recalculate overall totals
+                    calculateOverallTotals();
+
+                } catch (error) {
+                    console.error(`Error loading profit for bill ${invoice_no}:`, error);
+                    billProfits[invoice_no] = 0;
+                    updateBillRowProfit(invoice_no);
+                } finally {
+                    delete loadingPromises[invoice_no];
+                }
+            })();
+
+            return loadingPromises[invoice_no];
+        }
+
+        // Preload basic bill details (no profit calculation)
+        async function preloadBillDetails() {
+            try {
+                // Calculate overall totals directly from bills list (fast, no API calls)
+                overallTotalAmount = bills.reduce((sum, bill) => sum + (bill.total_amount || 0), 0);
+
+                // Initialize empty profit data
+                bills.forEach(bill => {
+                    if (!billDetails[bill.invoice_no]) {
+                        billDetails[bill.invoice_no] = {
+                            totalSubtotal: bill.total_amount || 0,
+                            totalGST: 0,
+                            totalRevenue: bill.total_amount || 0,
+                            totalFullMRP: bill.total_amount || 0
+                        };
+                    }
+                });
+
+                // Update summary with current data (profit will be 0 initially)
+                updateOverallSummary();
+                updateProgressBars();
+
+                console.log(`✅ Page loaded instantly! ${bills.length} bills shown. Profits loading in background...`);
+
+            } catch (error) {
+                console.error('Error in preloadBillDetails:', error);
+            }
+        }
+
+        // Calculate exact profit for a specific bill - Cost = MRP × 0.3 (70% margin)
         function calculateBillProfit(invoice_no, bill) {
             let totalProfit = 0;
             let totalSubtotal = 0;
@@ -1295,9 +1380,12 @@
 
             bills.forEach(bill => {
                 const billDetail = billDetails[bill.invoice_no];
+                const profit = billProfits[bill.invoice_no];
                 if (billDetail) {
                     overallTotalAmount += billDetail.totalRevenue || bill.total_amount;
-                    overallTotalProfit += billProfits[bill.invoice_no] || 0;
+                    if (profit !== null && profit !== undefined) {
+                        overallTotalProfit += profit;
+                    }
                     overallTotalGST += billDetail.totalGST || 0;
                 } else {
                     overallTotalAmount += bill.total_amount;
@@ -1323,6 +1411,8 @@
                 const billDetail = billDetails[bill.invoice_no];
                 if (billDetail && billDetail.totalFullMRP) {
                     grandTotalFullMRP += billDetail.totalFullMRP;
+                } else {
+                    grandTotalFullMRP += bill.total_amount || 0;
                 }
             });
             const profitPercentage = grandTotalFullMRP > 0 ? ((overallTotalProfit / grandTotalFullMRP) * 100).toFixed(1) : 0;
@@ -1402,17 +1492,13 @@
                 }
 
                 let matchesProfitRange = true;
-                const profit = billProfits[bill.invoice_no] || 0;
-                if (profitRange === 'profit-positive') {
-                    matchesProfitRange = profit > 0;
-                } else if (profitRange === 'profit-negative') {
-                    matchesProfitRange = profit < 0;
-                } else if (profitRange === 'profit-high') {
-                    matchesProfitRange = profit >= 100;
-                } else if (profitRange === 'profit-medium') {
-                    matchesProfitRange = profit >= 50 && profit < 100;
-                } else if (profitRange === 'profit-low') {
-                    matchesProfitRange = profit > 0 && profit < 50;
+                const profit = billProfits[bill.invoice_no];
+                if (profit !== null && profit !== undefined) {
+                    if (profitRange === 'profit-positive') matchesProfitRange = profit > 0;
+                    else if (profitRange === 'profit-negative') matchesProfitRange = profit < 0;
+                    else if (profitRange === 'profit-high') matchesProfitRange = profit >= 100;
+                    else if (profitRange === 'profit-medium') matchesProfitRange = profit >= 50 && profit < 100;
+                    else if (profitRange === 'profit-low') matchesProfitRange = profit > 0 && profit < 50;
                 }
 
                 return matchesSearch && matchesAmountRange && matchesProfitRange;
@@ -1421,13 +1507,24 @@
             filteredBills = sortBills(filteredBills, currentSort);
 
             filteredBills.forEach(bill => {
-                const profit = billProfits[bill.invoice_no] || 0;
+                const profit = billProfits[bill.invoice_no];
                 const billDetail = billDetails[bill.invoice_no];
                 let totalFullMRPForBill = 0;
                 if (billDetail && billDetail.totalFullMRP) {
                     totalFullMRPForBill = billDetail.totalFullMRP;
+                } else {
+                    totalFullMRPForBill = bill.total_amount || 0;
                 }
-                const profitPercentage = totalFullMRPForBill > 0 ? ((profit / totalFullMRPForBill) * 100).toFixed(1) : 0;
+
+                let profitDisplay = 'Loading...';
+                let profitPercentageDisplay = '--';
+                let profitColor = 'var(--gray)';
+
+                if (profit !== null && profit !== undefined) {
+                    profitDisplay = `₹${profit.toFixed(2)}`;
+                    profitPercentageDisplay = totalFullMRPForBill > 0 ? ((profit / totalFullMRPForBill) * 100).toFixed(1) + '%' : '0%';
+                    profitColor = profit >= 0 ? 'var(--success)' : 'var(--danger)';
+                }
 
                 const totalGST = billDetail ? billDetail.totalGST : 0;
                 const gstStatus = totalGST > 0 ? '<span class="gst-badge gst-on">GST On</span>' : '<span class="gst-badge gst-off">GST Off</span>';
@@ -1438,8 +1535,8 @@
                     <td>${bill.date}${bill.time ? ' ' + bill.time : ''}</td>
                     <td>${bill.customer_name}</td>
                     <td>₹${(billDetail ? billDetail.totalRevenue : bill.total_amount).toFixed(2)}</td>
-                    <td style="color: ${profit >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight: 600;">₹${profit.toFixed(2)}</td>
-                    <td style="color: ${profit >= 0 ? 'var(--success)' : 'var(--danger)'}">${profitPercentage}%</td>
+                    <td style="color: ${profitColor}; font-weight: 600;">${profitDisplay}${profit === null ? '<span class="profit-loading-spinner"></span>' : ''}</td>
+                    <td style="color: ${profitColor}">${profitPercentageDisplay}</td>
                     <td>${gstStatus}</td>
                 `;
                 tableBody.appendChild(row);
@@ -1479,9 +1576,17 @@
                 case 'customer_name-asc':
                     return sortedBills.sort((a, b) => a.customer_name.localeCompare(b.customer_name));
                 case 'profit-desc':
-                    return sortedBills.sort((a, b) => (billProfits[b.invoice_no] || 0) - (billProfits[a.invoice_no] || 0));
+                    return sortedBills.sort((a, b) => {
+                        const profitA = billProfits[a.invoice_no] || 0;
+                        const profitB = billProfits[b.invoice_no] || 0;
+                        return profitB - profitA;
+                    });
                 case 'profit-asc':
-                    return sortedBills.sort((a, b) => (billProfits[a.invoice_no] || 0) - (billProfits[b.invoice_no] || 0));
+                    return sortedBills.sort((a, b) => {
+                        const profitA = billProfits[a.invoice_no] || 0;
+                        const profitB = billProfits[b.invoice_no] || 0;
+                        return profitA - profitB;
+                    });
                 default:
                     return sortedBills;
             }
@@ -1519,7 +1624,45 @@
             filterBills();
         }
 
-        // Show full screen profit modal
+        // Update a single bill row with calculated profit
+        function updateBillRowProfit(invoice_no) {
+            const profit = billProfits[invoice_no];
+            const billDetail = billDetails[invoice_no];
+            let totalFullMRPForBill = 0;
+            if (billDetail && billDetail.totalFullMRP) {
+                totalFullMRPForBill = billDetail.totalFullMRP;
+            } else {
+                const bill = bills.find(b => b.invoice_no == invoice_no);
+                totalFullMRPForBill = bill ? bill.total_amount : 0;
+            }
+            const profitPercentage = totalFullMRPForBill > 0 ? ((profit / totalFullMRPForBill) * 100).toFixed(1) : 0;
+            const totalGST = billDetail ? billDetail.totalGST : 0;
+            const gstStatus = totalGST > 0 ? '<span class="gst-badge gst-on">GST On</span>' : '<span class="gst-badge gst-off">GST Off</span>';
+            const profitColor = profit >= 0 ? 'var(--success)' : 'var(--danger)';
+
+            const rows = document.querySelectorAll('#billsTableBody tr');
+            for (let row of rows) {
+                const link = row.querySelector('a');
+                if (link && link.textContent == invoice_no) {
+                    const profitCell = row.cells[4];
+                    if (profitCell) {
+                        profitCell.innerHTML = `<span style="color: ${profitColor}; font-weight: 600;">₹${profit.toFixed(2)}</span>`;
+                    }
+                    const percentCell = row.cells[5];
+                    if (percentCell) {
+                        percentCell.innerHTML = `<span style="color: ${profitColor}">${profitPercentage}%</span>`;
+                    }
+                    const gstCell = row.cells[6];
+                    if (gstCell) {
+                        gstCell.innerHTML = gstStatus;
+                    }
+                    break;
+                }
+            }
+            calculateOverallTotals();
+        }
+
+        // Show full screen profit modal - NOW LOADS GRAPHS ONLY WHEN CLICKED
         async function showProfitModal(invoice_no) {
             currentInvoice = invoice_no;
 
@@ -1535,12 +1678,17 @@
             if (invoiceTitle) invoiceTitle.textContent = invoice_no;
 
             try {
+                // Ensure profit is loaded
+                if (billProfits[invoice_no] === null || billProfits[invoice_no] === undefined) {
+                    await loadSingleBillProfit(invoice_no);
+                }
                 await loadProfitData(invoice_no);
 
                 if (loadingIndicator) loadingIndicator.style.display = 'none';
                 if (profitContent) profitContent.style.display = 'block';
 
                 animateElements();
+
             } catch (error) {
                 console.error('Error loading profit data:', error);
                 alert('Failed to load profit analysis. Please try again.');
@@ -1548,17 +1696,18 @@
             }
         }
 
-        // Load profit data with GST information
+        // Load profit data with GST information - LOADS ONLY WHEN BILL IS CLICKED
         async function loadProfitData(invoice_no) {
             try {
                 let bill = billDetails[invoice_no];
-                if (!bill) {
+                if (!bill || !bill.items) {
                     const response = await fetch(`/api/bill/${invoice_no}`);
                     if (!response.ok) {
                         throw new Error('Failed to fetch bill details');
                     }
                     bill = await response.json();
                     billDetails[invoice_no] = bill;
+                    calculateBillProfit(invoice_no, bill);
                 }
 
                 let totalProfit = 0;
@@ -1647,6 +1796,7 @@
                 }
 
                 calculateOverallTotals();
+                updateBillRowProfit(invoice_no);
 
                 createProfitChart(profitData, productNames);
                 createRevenueChart(revenueCostData, productNames);
