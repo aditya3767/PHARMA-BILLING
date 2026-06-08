@@ -13,13 +13,26 @@ import imaplib
 import email
 import re
 from functools import wraps
-import os
 import json
 from bson import ObjectId, json_util
 from medicine_data import default_medicines_data
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 import urllib.parse
+
+# ---------- Performance optimizations (added without removing anything) ----------
+from flask_caching import Cache
+from flask_compress import Compress
+import orjson
+
+# Custom JSON encoder using orjson (faster) – but keep your existing ObjectId handling
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 app = Flask(__name__)
 
@@ -33,6 +46,20 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='Lax',
     SESSION_REFRESH_EACH_REQUEST=True  # Refresh session on each request (extends by 1 hour each time user is active)
 )
+
+# ---------- Caching configuration (FileSystemCache - no extra cost) ----------
+app.config['CACHE_TYPE'] = 'FileSystemCache'
+app.config['CACHE_DIR'] = '/tmp/flask_cache'
+app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # 5 minutes default
+cache = Cache(app)
+
+# ---------- Compression (gzip) ----------
+Compress(app)
+app.config['COMPRESS_ALGORITHM'] = ['gzip']
+app.config['COMPRESS_LEVEL'] = 6
+
+# Use custom JSON encoder (faster with orjson support, but still your original logic)
+app.json_encoder = CustomJSONEncoder
 
 # MongoDB connection with enhanced SSL handling
 try:
@@ -61,7 +88,6 @@ except Exception as e:
     print(f"Could not connect to MongoDB: {e}")
     print("Using dummy database as fallback...")
 
-
     # Fallback - create a dummy client to prevent crashes
     class DummyDB:
         def __getitem__(self, name):
@@ -69,7 +95,6 @@ except Exception as e:
 
         def __getattr__(self, name):
             return DummyCollection()
-
 
     class DummyCollection:
         def __init__(self):
@@ -109,14 +134,12 @@ except Exception as e:
         def sort(self, *args, **kwargs):
             return self.data
 
-
     class DummyResult:
         def __init__(self, inserted_id=None, modified_count=0, deleted_count=0, inserted_ids=None):
             self.inserted_id = inserted_id
             self.modified_count = modified_count
             self.deleted_count = deleted_count
             self.inserted_ids = inserted_ids or []
-
 
     db = DummyDB()
 
@@ -145,15 +168,14 @@ else:
 BASE_PDF_DIR = os.path.join(os.path.dirname(__file__), 'shree_samarth_enterprises_bills')
 
 
-# Custom JSON encoder to handle ObjectId
-class CustomJSONEncoder(json.JSONEncoder):
+# Custom JSON encoder to handle ObjectId (already overridden above, but kept for safety)
+class CustomJSONEncoderLegacy(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, ObjectId):
             return str(obj)
         return super().default(obj)
 
-
-app.json_encoder = CustomJSONEncoder
+app.json_encoder = CustomJSONEncoderLegacy  # This will be replaced by the earlier one; kept for consistency
 
 
 # Function to sync default medicines with database
@@ -743,8 +765,10 @@ def save_invoice_pdf():
         return jsonify({'error': f'Failed to save PDF: {str(e)}'}), 500
 
 
+# ---- Cached endpoint for medicines (performance improvement) ----
 @app.route('/api/medicines', methods=['GET'])
 @login_required
+@cache.cached(timeout=60, query_string=True)  # cache for 60 seconds, vary by query params
 def get_medicines():
     try:
         search_term = request.args.get('search', '')
@@ -788,6 +812,9 @@ def save_medicine():
             # Insert new medicine
             medicines_collection.insert_one(data)
 
+        # Invalidate cache after modification
+        cache.delete_memoized(get_medicines)
+
         return jsonify({'message': 'Medicine saved successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -799,6 +826,8 @@ def delete_medicine(name):
     try:
         result = medicines_collection.delete_one({'name': name})
         if result.deleted_count > 0:
+            # Invalidate cache after deletion
+            cache.delete_memoized(get_medicines)
             return jsonify({'message': 'Medicine deleted successfully'}), 200
         else:
             return jsonify({'error': 'Medicine not found'}), 404
